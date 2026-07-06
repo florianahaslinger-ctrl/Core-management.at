@@ -9,8 +9,11 @@ Der Ticketshop besteht aus zwei Seiten im Design der Hauptseite:
 | `tickets.html` | Öffentlicher Shop: Tickets auswählen, mit E-Mail + Verifizierungscode anmelden, bestellen, eigene Tickets mit QR-Code ansehen |
 | `dashboard.html` | Adminbereich (PIN-geschützt): Statistiken & Diagramme, Events & Ticketkategorien verwalten, Bestellungen, Check-in, Einstellungen |
 
-Der Shop läuft komplett im Browser (GitHub Pages ist statisches Hosting, es gibt keinen Server).
-Alle Daten – Events, Bestellungen, Nutzer – werden im `localStorage` des jeweiligen Browsers gespeichert.
+**Empfohlen: Backend-Modus (Supabase + Stripe).** Mit dem Backend werden Bestellungen zentral gespeichert,
+E-Mail-Codes automatisch versendet und Zahlungen fälschungssicher per Stripe-Webhook bestätigt –
+Einrichtung siehe **`BACKEND-ANLEITUNG.md`**. Ohne Backend-Konfiguration (in `assets/config.js`) läuft der Shop
+im lokalen Demo-Modus: alle Daten liegen dann nur im `localStorage` des jeweiligen Browsers, und es gelten
+die Hinweise weiter unten in dieser Datei (EmailJS, Payment Links, PIN).
 
 ## Erste Schritte
 

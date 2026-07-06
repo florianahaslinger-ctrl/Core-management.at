@@ -5,6 +5,11 @@
   const $ = id => document.getElementById(id);
   const GOLD = '#B08A28'; // validierte Diagrammfarbe auf dunklem Grund
 
+  let ORDERS = [];   // alle Bestellungen (Admin-Sicht)
+  let EVENTS = [];
+  let SOLD = {};
+  let adminEmail = '';
+
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g,
       c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -15,25 +20,54 @@
   }
   function fmtDT(iso) { return iso ? new Date(iso).toLocaleString('de-AT') : ''; }
 
-  /* ================= PIN-Gate ================= */
+  /* ================= Zugang ================= */
+
   async function tryPin() {
     try {
       await S.adminLogin($('pinInput').value);
-      showDash();
+      await showDash();
     } catch (e) { msg($('pinMsg'), e.message, 'error'); }
   }
-  function showDash() {
+
+  async function adminSendCode() {
+    try {
+      msg($('adminMsg1'), 'Code wird gesendet …', 'info');
+      adminEmail = S.normEmail($('adminEmail').value);
+      await S.requestCode(adminEmail);
+      $('adminStep1').style.display = 'none';
+      $('adminStep2').style.display = '';
+      msg($('adminMsg1'), '');
+      $('adminCode').focus();
+    } catch (e) { msg($('adminMsg1'), e.message, 'error'); }
+  }
+
+  async function adminVerify() {
+    try {
+      await S.verifyCode(adminEmail, $('adminCode').value);
+      if (!(await S.adminLoggedIn())) {
+        await S.logout();
+        msg($('adminMsg2'), 'Diese E-Mail-Adresse hat keine Admin-Berechtigung. ' +
+          'Ein bestehender Admin kann sie in Supabase zur admins-Tabelle hinzufügen.', 'error');
+        return;
+      }
+      await showDash();
+    } catch (e) { msg($('adminMsg2'), e.message, 'error'); }
+  }
+
+  async function showDash() {
     $('pinGate').style.display = 'none';
     $('dash').style.display = '';
     $('adminLogout').style.display = '';
-    renderAll();
+    await renderAll();
   }
-  $('btnPin').addEventListener('click', tryPin);
-  $('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') tryPin(); });
-  $('adminLogout').addEventListener('click', e => {
-    e.preventDefault(); S.adminLogout(); location.reload();
-  });
-  if (S.adminLoggedIn()) showDash();
+
+  function setupGate() {
+    if (S.remote) {
+      $('pinForm').style.display = 'none';
+      $('emailForm').style.display = '';
+      $('gateIntro').textContent = 'Bitte melde dich mit deiner Admin-E-Mail-Adresse an – du erhältst einen Code per E-Mail.';
+    }
+  }
 
   /* ================= Tabs ================= */
   document.querySelectorAll('#tabs button').forEach(btn => {
@@ -46,20 +80,21 @@
   });
 
   /* ================= Übersicht ================= */
-  function renderStats() {
-    const st = S.stats();
+  async function renderStats() {
+    const userCount = S.remote ? null : await S.userCount();
+    const st = S.computeStats(ORDERS, userCount);
     $('statTiles').innerHTML = [
-      ['Umsatz', S.fmtEUR.format(st.revenue), st.openCount + ' Bestellung(en) offen'],
+      ['Umsatz (bezahlt)', S.fmtEUR.format(st.revenue), st.openCount + ' Bestellung(en) offen'],
       ['Verkaufte Tickets', st.ticketCount, 'über ' + st.orderCount + ' Bestellungen'],
       ['Check-ins', st.checkinCount, st.ticketCount ? Math.round(100 * st.checkinCount / st.ticketCount) + ' % eingecheckt' : '–'],
-      ['Registrierte Käufer:innen', st.userCount, 'per E-Mail verifiziert']
+      ['Käufer:innen', st.userCount, 'per E-Mail verifiziert']
     ].map(t => '<div class="stat-tile"><div class="k">' + t[0] + '</div><div class="v">' + t[1] +
       '</div><div class="s">' + t[2] + '</div></div>').join('');
   }
 
   /* --- SVG-Balkendiagramm: Verkäufe der letzten 14 Tage --- */
   function chartSales() {
-    const data = S.salesByDay(14);
+    const data = S.computeSalesByDay(ORDERS, 14);
     const W = 560, H = 240, pad = { l: 34, r: 8, t: 12, b: 26 };
     const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
     const maxV = Math.max(1, ...data.map(d => d.qty));
@@ -103,7 +138,7 @@
 
   /* --- SVG-Balkendiagramm horizontal: Umsatz nach Kategorie --- */
   function chartRevenue() {
-    const data = S.revenueByCategory().slice(0, 8);
+    const data = S.computeRevenueByCategory(ORDERS).slice(0, 8);
     const wrap = $('chartRevenue');
     if (!data.length) {
       wrap.innerHTML = '<p class="sub">Noch keine Verkäufe vorhanden.</p>';
@@ -153,10 +188,9 @@
   }
 
   function renderQuota() {
-    const sold = S.soldByCategory();
     let rows = '<tr><th>Event</th><th>Kategorie</th><th>Preis</th><th>Verkauft</th><th>Kontingent</th><th>Auslastung</th></tr>';
-    S.getEvents().forEach(ev => ev.categories.forEach(cat => {
-      const s = sold[cat.id] || 0;
+    EVENTS.forEach(ev => ev.categories.forEach(cat => {
+      const s = SOLD[cat.id] || 0;
       const pct = cat.quota ? Math.round(100 * s / cat.quota) : 0;
       rows += '<tr><td>' + esc(ev.name) + '</td><td>' + esc(cat.name) + '</td>' +
         '<td>' + S.fmtEUR.format(cat.price) + '</td><td>' + s + '</td><td>' + cat.quota + '</td>' +
@@ -169,15 +203,13 @@
 
   /* ================= Events & Tickets (modular) ================= */
   function renderAdminEvents() {
-    const sold = S.soldByCategory();
-    const evs = S.getEvents();
-    $('adminEvents').innerHTML = evs.length ? evs.map(ev =>
+    $('adminEvents').innerHTML = EVENTS.length ? EVENTS.map(ev =>
       '<div class="card"><div class="event-head"><h2>' + esc(ev.name) + '</h2>' +
       '<span class="badge ' + (ev.active ? 'bezahlt' : 'storniert') + '">' + (ev.active ? 'aktiv' : 'inaktiv') + '</span>' +
       '<span class="event-meta">' + fmtDT(ev.date) + (ev.location ? ' · ' + esc(ev.location) : '') + '</span></div>' +
       '<div class="table-scroll"><table class="data"><tr><th>Kategorie</th><th>Preis</th><th>Kontingent</th><th>Verkauft</th><th>Status</th></tr>' +
       ev.categories.map(c => '<tr><td>' + esc(c.name) + '</td><td>' + S.fmtEUR.format(c.price) + '</td><td>' + c.quota +
-        '</td><td>' + (sold[c.id] || 0) + '</td><td>' + (c.active ? 'aktiv' : 'inaktiv') + '</td></tr>').join('') +
+        '</td><td>' + (SOLD[c.id] || 0) + '</td><td>' + (c.active ? 'aktiv' : 'inaktiv') + '</td></tr>').join('') +
       '</table></div>' +
       '<div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">' +
       '<button class="btn btn-ghost btn-sm" data-edit="' + ev.id + '">Bearbeiten</button>' +
@@ -187,34 +219,39 @@
       : '<div class="card"><p class="sub">Noch keine Events angelegt.</p></div>';
 
     $('adminEvents').querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openEventEditor(b.dataset.edit)));
-    $('adminEvents').querySelectorAll('[data-toggle]').forEach(b => b.addEventListener('click', () => {
-      const ev = S.getEvent(b.dataset.toggle); ev.active = !ev.active; S.upsertEvent(ev); renderAll();
+    $('adminEvents').querySelectorAll('[data-toggle]').forEach(b => b.addEventListener('click', async () => {
+      const ev = EVENTS.find(e => e.id === b.dataset.toggle);
+      ev.active = !ev.active;
+      await S.upsertEvent(ev);
+      await renderAll();
     }));
-    $('adminEvents').querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => {
-      const ev = S.getEvent(b.dataset.del);
+    $('adminEvents').querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
+      const ev = EVENTS.find(e => e.id === b.dataset.del);
       if (confirm('Event „' + ev.name + '“ wirklich löschen? Bestehende Bestellungen bleiben erhalten.')) {
-        S.deleteEvent(ev.id); renderAll();
+        await S.deleteEvent(ev.id);
+        await renderAll();
       }
     }));
   }
 
   function catRowHTML(c) {
     c = c || { id: S.uid('cat'), name: '', price: '', quota: '', description: '', active: true, maxPerOrder: 10, paymentLink: '' };
-    return '<div class="admin-cat" data-cat="' + c.id + '">' +
+    return '<div class="admin-cat" data-cat="' + esc(c.id) + '">' +
       '<div style="flex:2 1 160px"><label>Name</label><input type="text" class="c-name" value="' + esc(c.name) + '" placeholder="z. B. VIP"></div>' +
       '<div><label>Preis (€)</label><input type="number" class="c-price" min="0" step="0.5" value="' + esc(c.price) + '"></div>' +
       '<div><label>Kontingent</label><input type="number" class="c-quota" min="0" step="1" value="' + esc(c.quota) + '"></div>' +
       '<div><label>Max./Bestellung</label><input type="number" class="c-max" min="1" step="1" value="' + esc(c.maxPerOrder || 10) + '"></div>' +
       '<div style="flex:2 1 200px"><label>Beschreibung</label><input type="text" class="c-desc" value="' + esc(c.description) + '"></div>' +
-      '<div style="flex:3 1 260px"><label>Stripe Payment-Link (Online-Zahlung, optional)</label>' +
-      '<input type="text" class="c-link" value="' + esc(c.paymentLink || '') + '" placeholder="https://buy.stripe.com/…"></div>' +
+      (S.remote ? '' :
+        '<div style="flex:3 1 260px"><label>Stripe Payment-Link (Online-Zahlung, optional)</label>' +
+        '<input type="text" class="c-link" value="' + esc(c.paymentLink || '') + '" placeholder="https://buy.stripe.com/…"></div>') +
       '<div style="flex:0 0 auto"><label class="switch" style="margin:0 0 8px"><input type="checkbox" class="c-active"' + (c.active ? ' checked' : '') + '> aktiv</label>' +
       '<button type="button" class="btn btn-danger btn-sm c-remove">Entfernen</button></div>' +
       '</div>';
   }
 
   function openEventEditor(id) {
-    const ev = id ? S.getEvent(id) : null;
+    const ev = id ? EVENTS.find(e => e.id === id) : null;
     $('evModalTitle').textContent = ev ? 'Event bearbeiten' : 'Neues Event';
     $('evId').value = ev ? ev.id : '';
     $('evName').value = ev ? ev.name : '';
@@ -241,9 +278,9 @@
 
   $('btnNewEvent').addEventListener('click', () => openEventEditor(null));
 
-  $('btnSaveEvent').addEventListener('click', () => {
+  $('btnSaveEvent').addEventListener('click', async () => {
     const id = $('evId').value;
-    const old = id ? S.getEvent(id) : null;
+    const old = id ? EVENTS.find(e => e.id === id) : null;
     const cats = Array.from($('catEditor').querySelectorAll('.admin-cat')).map(row => ({
       id: row.dataset.cat,
       name: row.querySelector('.c-name').value.trim(),
@@ -251,7 +288,7 @@
       quota: parseInt(row.querySelector('.c-quota').value, 10) || 0,
       maxPerOrder: parseInt(row.querySelector('.c-max').value, 10) || 10,
       description: row.querySelector('.c-desc').value.trim(),
-      paymentLink: row.querySelector('.c-link').value.trim(),
+      paymentLink: row.querySelector('.c-link') ? row.querySelector('.c-link').value.trim() : '',
       active: row.querySelector('.c-active').checked
     })).filter(c => c.name);
     const ev = {
@@ -266,16 +303,20 @@
     if (!ev.name) { msg($('evMsg'), 'Bitte einen Eventnamen eingeben.', 'error'); return; }
     if (!cats.length) { msg($('evMsg'), 'Bitte mindestens eine Ticketkategorie anlegen.', 'error'); return; }
     if (old) ev.createdAt = old.createdAt;
-    S.upsertEvent(ev);
-    $('eventModal').classList.remove('open');
-    renderAll();
+    try {
+      await S.upsertEvent(ev);
+      $('eventModal').classList.remove('open');
+      await renderAll();
+    } catch (e) {
+      msg($('evMsg'), e.message, 'error');
+    }
   });
 
   /* ================= Bestellungen ================= */
   function renderOrders() {
     const q = ($('orderSearch').value || '').trim().toLowerCase();
     const f = $('orderFilter').value;
-    let orders = S.getOrders().slice().reverse();
+    let orders = ORDERS;
     if (f) orders = orders.filter(o => o.status === f);
     if (q) orders = orders.filter(o =>
       o.id.toLowerCase().includes(q) || o.email.includes(q) ||
@@ -290,7 +331,7 @@
         '<td>' + S.fmtEUR.format(o.total) + '</td>' +
         '<td><span class="badge ' + esc(o.status) + '">' + esc(o.status) +
         (o.paidVia === 'stripe' ? ' · online' : '') + '</span>' +
-        (o.paidVia === 'stripe' ? '<div class="hint" style="margin-top:4px">Stripe – im Stripe-Dashboard gegenprüfen</div>' : '') +
+        (o.paidVia === 'stripe' && !S.remote ? '<div class="hint" style="margin-top:4px">Stripe – im Stripe-Dashboard gegenprüfen</div>' : '') +
         '</td>' +
         '<td style="white-space:nowrap">' +
         (o.status === 'offen' ? '<button class="btn btn-ghost btn-sm" data-paid="' + o.id + '">Als bezahlt markieren</button> ' : '') +
@@ -299,16 +340,18 @@
         '</td></tr>';
     });
     $('orderTable').innerHTML = rows;
-    $('orderTable').querySelectorAll('[data-paid]').forEach(b => b.addEventListener('click', () => {
-      S.setOrderStatus(b.dataset.paid, 'bezahlt'); renderAll();
+    $('orderTable').querySelectorAll('[data-paid]').forEach(b => b.addEventListener('click', async () => {
+      await S.setOrderStatus(b.dataset.paid, 'bezahlt', 'manuell');
+      await renderAll();
     }));
     $('orderTable').querySelectorAll('[data-pdf]').forEach(b => b.addEventListener('click', () => {
-      const order = S.getOrders().find(o => o.id === b.dataset.pdf);
+      const order = ORDERS.find(o => o.id === b.dataset.pdf);
       if (order) window.CMTicketPDF.download(order);
     }));
-    $('orderTable').querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', () => {
+    $('orderTable').querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', async () => {
       if (confirm('Bestellung ' + b.dataset.cancel + ' stornieren? Die Tickets werden ungültig und das Kontingent wieder frei.')) {
-        S.setOrderStatus(b.dataset.cancel, 'storniert'); renderAll();
+        await S.setOrderStatus(b.dataset.cancel, 'storniert');
+        await renderAll();
       }
     }));
   }
@@ -316,7 +359,7 @@
   $('orderFilter').addEventListener('change', renderOrders);
 
   $('btnCSV').addEventListener('click', () => {
-    const blob = new Blob(['﻿' + S.exportOrdersCSV()], { type: 'text/csv;charset=utf-8' });
+    const blob = new Blob(['﻿' + S.exportCSV(ORDERS)], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = 'ticketshop-bestellungen-' + new Date().toISOString().slice(0, 10) + '.csv';
@@ -326,7 +369,7 @@
 
   /* ================= Check-in ================= */
   function renderCheckins() {
-    const all = S.getOrders().flatMap(o => o.tickets.filter(t => t.checkedIn)
+    const all = ORDERS.flatMap(o => o.tickets.filter(t => t.checkedIn)
       .map(t => ({ t, email: o.email })))
       .sort((a, b) => new Date(b.t.checkedInAt) - new Date(a.t.checkedInAt)).slice(0, 20);
     let rows = '<tr><th>Zeit</th><th>Ticketcode</th><th>Kategorie</th><th>Event</th><th>E-Mail</th></tr>';
@@ -338,13 +381,13 @@
     $('checkinTable').innerHTML = rows;
   }
 
-  function doCheckin() {
+  async function doCheckin() {
     try {
-      const found = S.checkIn($('checkinCode').value);
+      const found = await S.checkIn($('checkinCode').value);
       msg($('checkinMsg'), '✓ Eingecheckt: ' + found.ticket.code + ' – ' + found.ticket.categoryName +
         ' (' + found.order.email + ')', 'ok');
       $('checkinCode').value = '';
-      renderAll();
+      await renderAll();
     } catch (e) { msg($('checkinMsg'), e.message, 'error'); }
     $('checkinCode').focus();
   }
@@ -352,27 +395,35 @@
   $('checkinCode').addEventListener('keydown', e => { if (e.key === 'Enter') doCheckin(); });
 
   /* ================= Einstellungen ================= */
-  function loadSettingsForm() {
-    const s = S.getSettings();
-    $('ejService').value = s.emailjs.serviceId;
-    $('ejTemplate').value = s.emailjs.templateId;
-    $('ejKey').value = s.emailjs.publicKey;
+  async function loadSettingsForm() {
+    const s = await S.getSettings();
+    if (S.remote) {
+      $('cardBackend').style.display = '';
+      $('cardEmailJS').style.display = 'none';
+      $('cardStripeLinks').style.display = 'none';
+      $('cardPin').style.display = 'none';
+      $('cardData').style.display = 'none';
+    } else {
+      $('ejService').value = s.emailjs.serviceId;
+      $('ejTemplate').value = s.emailjs.templateId;
+      $('ejKey').value = s.emailjs.publicKey;
+    }
     $('checkoutNote').value = s.checkoutNote;
   }
 
-  $('btnSaveEJ').addEventListener('click', () => {
-    S.saveSettings({ emailjs: {
+  $('btnSaveEJ').addEventListener('click', async () => {
+    await S.saveSettings({ emailjs: {
       serviceId: $('ejService').value.trim(),
       templateId: $('ejTemplate').value.trim(),
       publicKey: $('ejKey').value.trim()
     }});
-    msg($('ejMsg'), S.emailConfigured()
+    msg($('ejMsg'), (await S.emailConfigured())
       ? 'Gespeichert – E-Mail-Versand ist aktiv.'
       : 'Gespeichert – Felder unvollständig, der Shop bleibt im Demo-Modus.', 'ok');
   });
 
   $('btnTestEJ').addEventListener('click', async () => {
-    if (!S.emailConfigured()) { msg($('ejMsg'), 'Bitte zuerst alle drei EmailJS-Felder ausfüllen und speichern.', 'error'); return; }
+    if (!(await S.emailConfigured())) { msg($('ejMsg'), 'Bitte zuerst alle drei EmailJS-Felder ausfüllen und speichern.', 'error'); return; }
     const to = prompt('Test-E-Mail senden an:');
     if (!to) return;
     try {
@@ -386,9 +437,11 @@
     } catch (e) { msg($('ejMsg'), e.message, 'error'); }
   });
 
-  $('btnSaveNote').addEventListener('click', () => {
-    S.saveSettings({ checkoutNote: $('checkoutNote').value.trim() });
-    alert('Checkout-Hinweis gespeichert.');
+  $('btnSaveNote').addEventListener('click', async () => {
+    try {
+      await S.saveSettings({ checkoutNote: $('checkoutNote').value.trim() });
+      alert('Checkout-Hinweis gespeichert.');
+    } catch (e) { alert(e.message); }
   });
 
   $('btnSavePin').addEventListener('click', async () => {
@@ -401,23 +454,51 @@
     } catch (e) { msg($('pinChangeMsg'), e.message, 'error'); }
   });
 
-  $('btnReset').addEventListener('click', () => {
+  $('btnReset').addEventListener('click', async () => {
     if (confirm('Wirklich ALLE Shop-Daten (Events, Bestellungen, Nutzer, Einstellungen) löschen?') &&
         confirm('Letzte Warnung: Diese Aktion kann nicht rückgängig gemacht werden.')) {
-      Object.values(S.KEYS).forEach(k => localStorage.removeItem(k));
+      await S.resetAll();
       location.reload();
     }
   });
 
   /* ================= Gesamt-Render ================= */
-  function renderAll() {
-    renderStats();
+  async function renderAll() {
+    [ORDERS, EVENTS, SOLD] = await Promise.all([
+      S.getAllOrders(), S.getEvents(), S.soldByCategory()
+    ]);
+    await renderStats();
     chartSales();
     chartRevenue();
     renderQuota();
     renderAdminEvents();
     renderOrders();
     renderCheckins();
-    loadSettingsForm();
+    await loadSettingsForm();
   }
+
+  /* ================= Init ================= */
+  async function init() {
+    $('btnPin').addEventListener('click', tryPin);
+    $('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') tryPin(); });
+    $('btnAdminCode').addEventListener('click', adminSendCode);
+    $('adminEmail').addEventListener('keydown', e => { if (e.key === 'Enter') adminSendCode(); });
+    $('btnAdminVerify').addEventListener('click', adminVerify);
+    $('adminCode').addEventListener('keydown', e => { if (e.key === 'Enter') adminVerify(); });
+    $('btnAdminBack').addEventListener('click', () => {
+      $('adminStep1').style.display = '';
+      $('adminStep2').style.display = 'none';
+    });
+    $('adminLogout').addEventListener('click', async e => {
+      e.preventDefault();
+      await S.adminLogout();
+      location.reload();
+    });
+
+    await S.init();
+    setupGate();
+    if (await S.adminLoggedIn()) await showDash();
+  }
+
+  init();
 })();
