@@ -38,12 +38,20 @@ Ohne Konfiguration läuft der Shop im **Demo-Modus**: Der 6-stellige Code wird d
 
 Danach erhalten Käufer:innen Verifizierungscodes und Bestellbestätigungen per E-Mail.
 
-## Ablauf für Käufer:innen
+## Ablauf für Käufer:innen (Zahlung vor Ticketfreigabe)
 
 1. Tickets auf `tickets.html` auswählen → *Zur Kassa*.
 2. E-Mail-Adresse eingeben → 6-stelliger Code kommt per E-Mail (10 Minuten gültig, max. 5 Versuche, 60 s Sperre zwischen Sendungen).
-3. Code eingeben → Bestellung abschließen.
-4. Tickets mit QR-Code erscheinen unter *Meine Tickets* (gleicher Browser) und in der Bestätigungs-E-Mail.
+3. Code eingeben → Bestellung abschließen. Die Tickets sind jetzt **reserviert** (Status *offen*),
+   aber **noch nicht gültig** – es gibt noch keinen QR-Code und kein PDF.
+4. Zahlung erfolgt laut Checkout-Hinweis (z. B. Überweisung oder Abendkassa – Text im Dashboard einstellbar).
+5. Im Dashboard unter *Bestellungen* die Bestellung **als bezahlt markieren** → erst dadurch werden die Tickets gültig.
+   Ist EmailJS konfiguriert, bekommt der/die Käufer:in automatisch eine Zahlungsbestätigung per E-Mail.
+6. Unter *Meine Tickets* erscheinen jetzt **QR-Code + klassischer Ticketcode** (beide gleichwertig),
+   und die Tickets können als **PDF heruntergeladen** werden (eine Seite pro Ticket, mit QR-Code und Code zum Vorzeigen).
+   Auch im Dashboard gibt es pro bezahlter Bestellung einen *Tickets-PDF*-Button.
+
+**Wichtig:** Der Check-in akzeptiert nur Tickets aus bezahlten Bestellungen – unbezahlte oder stornierte Tickets werden abgewiesen.
 
 ## Dashboard-Funktionen
 
@@ -61,7 +69,8 @@ Danach erhalten Käufer:innen Verifizierungscodes und Bestellbestätigungen per 
   ein Backend (z. B. Supabase/Firebase) oder einen Ticketing-Dienst – die Shop-Oberfläche ist dafür vorbereitet,
   da die gesamte Datenlogik in `assets/store.js` gekapselt ist.
 - **Keine Online-Zahlung integriert.** Bestellungen werden als *offen* angelegt; Zahlung z. B. per Überweisung
-  oder Abendkassa, danach im Dashboard *als bezahlt markieren*. (Stripe Payment Links lassen sich später ergänzen.)
+  oder Abendkassa, danach im Dashboard *als bezahlt markieren* – erst dann werden QR-Code und PDF freigeschaltet.
+  (Stripe Payment Links lassen sich später ergänzen.)
 - **Die Admin-PIN ist Komfortschutz, keine echte Sicherheit** – der Quellcode ist öffentlich einsehbar.
 
 ## Dateien
@@ -70,3 +79,5 @@ Danach erhalten Käufer:innen Verifizierungscodes und Bestellbestätigungen per 
 - `dashboard.html` + `assets/dashboard.js` – Dashboard
 - `assets/store.js` – gesamte Daten- und E-Mail-Logik
 - `assets/shop.css` – gemeinsames Design (Gold/Schwarz wie Hauptseite)
+- `assets/qrcode.js` – QR-Code-Generator (MIT-Lizenz, lokal eingebunden – keine externen Abhängigkeiten)
+- `assets/ticket-pdf.js` – PDF-Erzeugung der Tickets (ohne externe Bibliotheken)

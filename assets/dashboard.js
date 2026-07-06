@@ -288,12 +288,17 @@
         '<td><span class="badge ' + esc(o.status) + '">' + esc(o.status) + '</span></td>' +
         '<td style="white-space:nowrap">' +
         (o.status === 'offen' ? '<button class="btn btn-ghost btn-sm" data-paid="' + o.id + '">Als bezahlt markieren</button> ' : '') +
+        (o.status === 'bezahlt' ? '<button class="btn btn-ghost btn-sm" data-pdf="' + o.id + '">Tickets-PDF</button> ' : '') +
         (o.status !== 'storniert' ? '<button class="btn btn-danger btn-sm" data-cancel="' + o.id + '">Stornieren</button>' : '') +
         '</td></tr>';
     });
     $('orderTable').innerHTML = rows;
     $('orderTable').querySelectorAll('[data-paid]').forEach(b => b.addEventListener('click', () => {
       S.setOrderStatus(b.dataset.paid, 'bezahlt'); renderAll();
+    }));
+    $('orderTable').querySelectorAll('[data-pdf]').forEach(b => b.addEventListener('click', () => {
+      const order = S.getOrders().find(o => o.id === b.dataset.pdf);
+      if (order) window.CMTicketPDF.download(order);
     }));
     $('orderTable').querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', () => {
       if (confirm('Bestellung ' + b.dataset.cancel + ' stornieren? Die Tickets werden ungültig und das Kontingent wieder frei.')) {

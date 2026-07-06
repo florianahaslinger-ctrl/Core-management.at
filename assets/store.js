@@ -269,11 +269,13 @@
       if (this.emailConfigured()) {
         const list = items.map(i => i.qty + '× ' + i.categoryName + ' – ' + i.eventName).join(', ');
         this.sendEmail(email, {
-          subject: 'Bestellbestätigung ' + order.id + ' – CORE Management',
+          subject: 'Reservierungsbestätigung ' + order.id + ' – CORE Management',
           passcode: order.id,
           message: 'Danke für deine Bestellung ' + order.id + ': ' + list +
-            '. Gesamt: ' + fmtEUR.format(total) + '. Ticketcodes: ' +
-            tickets.map(t => t.code).join(', ')
+            '. Gesamt: ' + fmtEUR.format(total) +
+            '. Die Tickets sind reserviert und werden nach Zahlungseingang gültig – ' +
+            'danach findest du sie inklusive QR-Code und PDF unter „Meine Tickets“. ' +
+            this.getSettings().checkoutNote
         }).catch(() => {});
       }
       return order;
@@ -287,7 +289,22 @@
     setOrderStatus(orderId, status) {
       const orders = this.getOrders();
       const o = orders.find(x => x.id === orderId);
-      if (o) { o.status = status; this.saveOrders(orders); }
+      if (o) {
+        const wasPaid = o.status === 'bezahlt';
+        o.status = status;
+        this.saveOrders(orders);
+        // Zahlungsbestätigung senden (best effort)
+        if (status === 'bezahlt' && !wasPaid && this.emailConfigured()) {
+          this.sendEmail(o.email, {
+            subject: 'Zahlung erhalten – deine Tickets sind gültig (' + o.id + ')',
+            passcode: o.id,
+            message: 'Wir haben deine Zahlung für Bestellung ' + o.id + ' erhalten. ' +
+              'Deine Tickets sind jetzt gültig: ' + o.tickets.map(t => t.code).join(', ') +
+              '. Unter „Meine Tickets“ auf core-management.at/tickets.html kannst du sie ' +
+              'inklusive QR-Code ansehen und als PDF herunterladen.'
+          }).catch(() => {});
+        }
+      }
       return o;
     },
 
@@ -304,6 +321,8 @@
       const found = this.findTicket(code);
       if (!found) throw new Error('Ticketcode nicht gefunden.');
       if (found.order.status === 'storniert') throw new Error('Bestellung wurde storniert – Ticket ungültig.');
+      if (found.order.status !== 'bezahlt') throw new Error('Bestellung ' + found.order.id +
+        ' ist noch nicht bezahlt – Ticket nicht gültig. Zuerst unter „Bestellungen“ als bezahlt markieren.');
       if (found.ticket.checkedIn) throw new Error('Ticket wurde bereits eingecheckt (' +
         new Date(found.ticket.checkedInAt).toLocaleString('de-AT') + ').');
       found.ticket.checkedIn = true;
