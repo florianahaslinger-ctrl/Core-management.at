@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tickets – CORE Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="assets/shop.css">
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+</head>
+<body>
+
+<nav class="shop-nav">
+  <a href="index.html" class="logo"><span>CORE</span> MANAGEMENT</a>
+  <div class="links">
+    <a href="tickets.html" class="active">Ticketshop</a>
+    <a href="#meine-tickets" id="navMyTickets">Meine Tickets</a>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="#" id="navAuth" class="nav-user">Anmelden</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="page-head">
+    <div class="eyebrow">Ticketshop</div>
+    <h1>Sichere dir deine <em>Tickets.</em></h1>
+    <p>Wähle deine Ticketkategorie, melde dich mit deiner E-Mail-Adresse an und erhalte deine Tickets mit QR-Code direkt online.</p>
+  </div>
+
+  <div id="shopMsg" class="msg"></div>
+  <div id="eventList"></div>
+
+  <!-- Meine Tickets -->
+  <section id="meine-tickets" style="margin-top:70px">
+    <div class="page-head" style="margin-bottom:20px">
+      <div class="eyebrow">Mein Konto</div>
+      <h1 style="font-size:clamp(28px,4vw,40px)">Meine <em>Tickets</em></h1>
+    </div>
+    <div id="myTicketsArea" class="card">
+      <p class="sub">Bitte melde dich mit deiner E-Mail-Adresse an, um deine Tickets zu sehen.</p>
+      <p style="margin-top:14px"><button class="btn btn-ghost" onclick="openLogin()">Jetzt anmelden</button></p>
+    </div>
+  </section>
+</div>
+
+<!-- Warenkorb-Leiste -->
+<div class="cart-bar" id="cartBar">
+  <div class="desc" id="cartDesc"></div>
+  <div class="sum" id="cartSum"></div>
+  <button class="btn btn-gold" id="btnCheckout">Zur Kassa</button>
+</div>
+
+<!-- Login / Verifizierung -->
+<div class="modal-backdrop" id="loginModal">
+  <div class="modal">
+    <h2>Anmelden</h2>
+    <p class="sub">Gib deine E-Mail-Adresse ein – wir senden dir einen 6-stelligen Verifizierungscode.</p>
+    <div id="loginStep1">
+      <label for="loginEmail">E-Mail-Adresse</label>
+      <input type="email" id="loginEmail" placeholder="deine@email.at" autocomplete="email">
+      <div class="msg" id="loginMsg1"></div>
+      <div style="display:flex;gap:10px;margin-top:20px">
+        <button class="btn btn-gold" id="btnSendCode">Code senden</button>
+        <button class="btn btn-ghost" onclick="closeModal('loginModal')">Abbrechen</button>
+      </div>
+    </div>
+    <div id="loginStep2" style="display:none">
+      <div class="msg info show" id="sentInfo"></div>
+      <div id="demoCodeBox" style="display:none">
+        <p class="hint">Demo-Modus: Es ist noch kein E-Mail-Dienst konfiguriert, daher wird der Code hier angezeigt. Im Dashboard unter „Einstellungen“ kann EmailJS für echten Versand hinterlegt werden.</p>
+        <div class="demo-code" id="demoCode"></div>
+      </div>
+      <label for="loginCode">Verifizierungscode</label>
+      <input type="text" id="loginCode" class="code-input" maxlength="6" inputmode="numeric" placeholder="••••••">
+      <div class="msg" id="loginMsg2"></div>
+      <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
+        <button class="btn btn-gold" id="btnVerify">Bestätigen</button>
+        <button class="btn btn-ghost btn-sm" id="btnResend">Code erneut senden</button>
+        <button class="btn btn-ghost btn-sm" onclick="backToStep1()">E-Mail ändern</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Checkout -->
+<div class="modal-backdrop" id="checkoutModal">
+  <div class="modal modal-wide">
+    <h2>Bestellung abschließen</h2>
+    <p class="sub" id="checkoutEmail"></p>
+    <div id="checkoutItems"></div>
+    <p style="margin-top:14px;text-align:right;font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--gold)" id="checkoutTotal"></p>
+    <p class="hint" id="checkoutNote"></p>
+    <div class="msg" id="checkoutMsg"></div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="btn btn-gold" id="btnPlaceOrder">Verbindlich bestellen</button>
+      <button class="btn btn-ghost" onclick="closeModal('checkoutModal')">Zurück</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bestell-Erfolg -->
+<div class="modal-backdrop" id="successModal">
+  <div class="modal modal-wide">
+    <h2>Danke für deine Bestellung! 🎉</h2>
+    <p class="sub" id="successSub"></p>
+    <div id="successTickets"></div>
+    <div style="display:flex;gap:10px;margin-top:22px">
+      <button class="btn btn-gold" onclick="closeModal('successModal');location.hash='#meine-tickets';renderMyTickets()">Zu meinen Tickets</button>
+    </div>
+  </div>
+</div>
+
+<footer class="shop-footer">
+  <div>© CORE Management · Events &amp; Entertainment Austria</div>
+  <div><a href="index.html">Zur Hauptseite</a> · <a href="dashboard.html">Dashboard</a></div>
+</footer>
+
+<script src="assets/store.js"></script>
+<script src="assets/shop.js"></script>
+</body>
+</html>

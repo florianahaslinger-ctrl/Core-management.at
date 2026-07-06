@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard – CORE Management Ticketshop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="assets/shop.css">
+</head>
+<body>
+
+<nav class="shop-nav">
+  <a href="index.html" class="logo"><span>CORE</span> MANAGEMENT</a>
+  <div class="links">
+    <a href="tickets.html">Ticketshop</a>
+    <a href="dashboard.html" class="active">Dashboard</a>
+    <a href="#" id="adminLogout" class="nav-user" style="display:none">Abmelden</a>
+  </div>
+</nav>
+
+<!-- PIN-Login -->
+<div class="wrap" id="pinGate">
+  <div class="page-head">
+    <div class="eyebrow">Adminbereich</div>
+    <h1>Dashboard-<em>Zugang</em></h1>
+    <p>Bitte gib die Admin-PIN ein, um das Ticketshop-Dashboard zu öffnen.</p>
+  </div>
+  <div class="card" style="max-width:420px">
+    <label for="pinInput">Admin-PIN</label>
+    <input type="password" id="pinInput" inputmode="numeric" maxlength="8" placeholder="••••">
+    <p class="hint">Standard-PIN: 2468 – bitte nach dem ersten Login unter „Einstellungen“ ändern.</p>
+    <div class="msg" id="pinMsg"></div>
+    <button class="btn btn-gold" id="btnPin" style="margin-top:16px">Anmelden</button>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div class="wrap" id="dash" style="display:none">
+  <div class="page-head" style="margin-bottom:24px">
+    <div class="eyebrow">Adminbereich</div>
+    <h1>Ticketshop-<em>Dashboard</em></h1>
+  </div>
+
+  <div class="dash-tabs" id="tabs">
+    <button data-tab="tabOverview" class="active">Übersicht</button>
+    <button data-tab="tabEvents">Events &amp; Tickets</button>
+    <button data-tab="tabOrders">Bestellungen</button>
+    <button data-tab="tabCheckin">Check-in</button>
+    <button data-tab="tabSettings">Einstellungen</button>
+  </div>
+
+  <!-- Übersicht -->
+  <div class="tabpane active" id="tabOverview">
+    <div class="dash-grid" id="statTiles"></div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3>Verkaufte Tickets – letzte 14 Tage</h3>
+        <div class="chart-svg-wrap" id="chartSales"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Umsatz nach Ticketkategorie</h3>
+        <div class="chart-svg-wrap" id="chartRevenue"></div>
+      </div>
+    </div>
+    <div class="chart-card" style="margin-top:22px">
+      <h3>Auslastung je Kategorie</h3>
+      <div class="table-scroll">
+        <table class="data" id="quotaTable"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Events & Tickets -->
+  <div class="tabpane" id="tabEvents">
+    <div class="toolbar">
+      <p class="sub">Events und Ticketkategorien sind vollständig modular: anlegen, umbenennen, Preise &amp; Kontingente ändern, aktivieren/deaktivieren.</p>
+      <span class="spacer"></span>
+      <button class="btn btn-gold btn-sm" id="btnNewEvent">+ Neues Event</button>
+    </div>
+    <div id="adminEvents"></div>
+  </div>
+
+  <!-- Bestellungen -->
+  <div class="tabpane" id="tabOrders">
+    <div class="toolbar">
+      <input type="text" id="orderSearch" placeholder="Suche: Bestellnr., E-Mail oder Ticketcode …" style="max-width:340px">
+      <select id="orderFilter" style="max-width:180px">
+        <option value="">Alle Status</option>
+        <option value="offen">offen</option>
+        <option value="bezahlt">bezahlt</option>
+        <option value="storniert">storniert</option>
+      </select>
+      <span class="spacer"></span>
+      <button class="btn btn-ghost btn-sm" id="btnCSV">CSV exportieren</button>
+    </div>
+    <div class="table-scroll card" style="padding:10px">
+      <table class="data" id="orderTable"></table>
+    </div>
+  </div>
+
+  <!-- Check-in -->
+  <div class="tabpane" id="tabCheckin">
+    <div class="card" style="max-width:560px">
+      <h2>Ticket-Check-in</h2>
+      <p class="sub">Ticketcode eingeben oder scannen (z.&nbsp;B. CM-XXXX-XXXX) und bestätigen.</p>
+      <label for="checkinCode">Ticketcode</label>
+      <input type="text" id="checkinCode" placeholder="CM-XXXX-XXXX" autocomplete="off" style="text-transform:uppercase">
+      <div class="msg" id="checkinMsg"></div>
+      <button class="btn btn-gold" id="btnCheckin" style="margin-top:14px">Einchecken</button>
+    </div>
+    <div class="card" style="margin-top:22px">
+      <h2>Letzte Check-ins</h2>
+      <div class="table-scroll"><table class="data" id="checkinTable"></table></div>
+    </div>
+  </div>
+
+  <!-- Einstellungen -->
+  <div class="tabpane" id="tabSettings">
+    <div class="card">
+      <h2>E-Mail-Versand (EmailJS)</h2>
+      <p class="sub">Für echten Versand der Verifizierungscodes ein kostenloses Konto auf <b>emailjs.com</b> anlegen,
+        einen E-Mail-Service verbinden und ein Template mit den Variablen <code>{{to_email}}</code>, <code>{{passcode}}</code> und <code>{{message}}</code> erstellen.
+        Ohne Konfiguration läuft der Shop im Demo-Modus (Code wird im Browser angezeigt).</p>
+      <div class="field-row">
+        <div><label>Service-ID</label><input type="text" id="ejService" placeholder="service_xxxxxxx"></div>
+        <div><label>Template-ID</label><input type="text" id="ejTemplate" placeholder="template_xxxxxxx"></div>
+        <div><label>Public Key</label><input type="text" id="ejKey" placeholder="XXXXXXXXXXXXXXX"></div>
+      </div>
+      <div class="msg" id="ejMsg"></div>
+      <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+        <button class="btn btn-gold btn-sm" id="btnSaveEJ">Speichern</button>
+        <button class="btn btn-ghost btn-sm" id="btnTestEJ">Test-E-Mail senden</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Checkout-Hinweis</h2>
+      <p class="sub">Dieser Text wird Käufer:innen beim Abschluss der Bestellung angezeigt (z.&nbsp;B. Zahlungsinformationen).</p>
+      <textarea id="checkoutNote" rows="3"></textarea>
+      <button class="btn btn-gold btn-sm" id="btnSaveNote" style="margin-top:14px">Speichern</button>
+    </div>
+
+    <div class="card">
+      <h2>Admin-PIN ändern</h2>
+      <div class="field-row">
+        <div><label>Neue PIN (4–8 Ziffern)</label><input type="password" id="newPin" maxlength="8"></div>
+        <div><label>PIN wiederholen</label><input type="password" id="newPin2" maxlength="8"></div>
+      </div>
+      <div class="msg" id="pinChangeMsg"></div>
+      <button class="btn btn-gold btn-sm" id="btnSavePin" style="margin-top:14px">PIN speichern</button>
+      <p class="hint">Hinweis: Der Shop läuft komplett im Browser (statisches Hosting). Die PIN schützt vor unbefugtem Zugriff am selben Gerät,
+        ist aber kein Ersatz für einen echten Server mit Benutzerkonten.</p>
+    </div>
+
+    <div class="card">
+      <h2>Daten</h2>
+      <p class="sub">Alle Shop-Daten (Events, Bestellungen, Nutzer) dieses Browsers zurücksetzen.</p>
+      <button class="btn btn-danger btn-sm" id="btnReset" style="margin-top:8px">Alle Shop-Daten löschen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Event-Editor -->
+<div class="modal-backdrop" id="eventModal">
+  <div class="modal modal-wide">
+    <h2 id="evModalTitle">Event bearbeiten</h2>
+    <input type="hidden" id="evId">
+    <div class="field-row">
+      <div style="flex:2 1 260px"><label>Eventname</label><input type="text" id="evName" placeholder="Schulball 2026"></div>
+      <div><label>Datum &amp; Uhrzeit</label><input type="datetime-local" id="evDate"></div>
+    </div>
+    <div class="field-row">
+      <div><label>Ort</label><input type="text" id="evLocation" placeholder="Eventsaal, Wien"></div>
+      <div style="flex:0 0 auto;display:flex;align-items:flex-end;padding-bottom:2px">
+        <label class="switch" style="margin:0"><input type="checkbox" id="evActive"> Event aktiv (im Shop sichtbar)</label>
+      </div>
+    </div>
+    <label>Beschreibung</label>
+    <textarea id="evDesc" rows="2"></textarea>
+
+    <label style="margin-top:22px">Ticketkategorien</label>
+    <div id="catEditor"></div>
+    <button class="btn btn-ghost btn-sm" id="btnAddCat" style="margin-top:10px">+ Kategorie hinzufügen</button>
+
+    <div class="msg" id="evMsg"></div>
+    <div style="display:flex;gap:10px;margin-top:22px">
+      <button class="btn btn-gold" id="btnSaveEvent">Speichern</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('eventModal').classList.remove('open')">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<footer class="shop-footer">
+  <div>© CORE Management · Ticketshop-Dashboard</div>
+  <div><a href="tickets.html">Zum Shop</a> · <a href="index.html">Hauptseite</a></div>
+</footer>
+
+<script src="assets/store.js"></script>
+<script src="assets/dashboard.js"></script>
+</body>
+</html>
