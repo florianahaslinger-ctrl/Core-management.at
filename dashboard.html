@@ -136,6 +136,20 @@
     </div>
 
     <div class="card">
+      <h2>Online-Zahlung (Stripe Payment Links)</h2>
+      <p class="sub">So müssen Käufer:innen <b>direkt online bezahlen</b>, bevor sie ihre Tickets erhalten:</p>
+      <ol class="sub" style="margin:10px 0 0 20px;line-height:1.9">
+        <li>Kostenloses Konto auf <b>stripe.com</b> erstellen (Gebühr nur pro Transaktion, ca. 1,5 % + 0,25 €).</li>
+        <li>Im Stripe-Dashboard unter <i>Produktkatalog</i> für jede Ticketkategorie ein Produkt mit dem passenden Preis anlegen.</li>
+        <li>Unter <i>Zahlungslinks</i> („Payment Links“) pro Produkt einen Link erstellen und <b>„Kunden können Menge anpassen“ aktivieren</b>.</li>
+        <li>Beim Zahlungslink unter <i>Nach der Zahlung</i> → „Kunden zu Ihrer Website weiterleiten“ diese Adresse eintragen:<br>
+          <code>https://core-management.at/tickets.html?paid=1</code></li>
+        <li>Den Link (https://buy.stripe.com/…) hier im Tab <i>Events &amp; Tickets</i> beim Bearbeiten der jeweiligen Kategorie in das Feld <b>„Stripe Payment-Link“</b> einfügen.</li>
+      </ol>
+      <p class="hint" style="margin-top:12px">Kategorien mit Payment-Link führen im Checkout direkt zur Stripe-Bezahlseite; die Tickets werden erst nach der Rückkehr von der erfolgreichen Zahlung freigeschaltet. Kategorien ohne Link laufen weiter über den manuellen Weg (Überweisung/Abendkassa + „Als bezahlt markieren“). Empfehlung: Online-Zahlungen regelmäßig im Stripe-Dashboard gegenprüfen – die Freischaltung erfolgt im Browser des Kunden und ersetzt keine Buchhaltungskontrolle.</p>
+    </div>
+
+    <div class="card">
       <h2>Checkout-Hinweis</h2>
       <p class="sub">Dieser Text wird Käufer:innen beim Abschluss der Bestellung angezeigt (z.&nbsp;B. Zahlungsinformationen).</p>
       <textarea id="checkoutNote" rows="3"></textarea>

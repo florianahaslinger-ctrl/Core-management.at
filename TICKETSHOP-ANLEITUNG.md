@@ -38,6 +38,32 @@ Ohne Konfiguration läuft der Shop im **Demo-Modus**: Der 6-stellige Code wird d
 
 Danach erhalten Käufer:innen Verifizierungscodes und Bestellbestätigungen per E-Mail.
 
+## Online-Zahlung einrichten (Stripe Payment Links)
+
+Damit Käufer:innen **direkt online bezahlen müssen**, bevor sie ihre Tickets bekommen:
+
+1. Kostenloses Konto auf [stripe.com](https://stripe.com) erstellen (keine Fixkosten, Gebühr pro Transaktion).
+2. Im Stripe-Dashboard unter *Produktkatalog* für **jede Ticketkategorie ein Produkt** mit dem passenden Preis anlegen (z. B. „Schulball 2026 – VIP“, 59 €).
+3. Unter *Zahlungslinks* pro Produkt einen **Payment Link** erstellen:
+   - **„Kunden können Menge anpassen“ aktivieren** (damit mehrere Tickets auf einmal bezahlt werden können).
+   - Unter *Nach der Zahlung* → **„Kunden zu Ihrer Website weiterleiten“**: `https://core-management.at/tickets.html?paid=1`
+4. Den Link (`https://buy.stripe.com/…`) im Ticketshop-Dashboard unter *Events & Tickets → Bearbeiten* in das Feld
+   **„Stripe Payment-Link“** der jeweiligen Kategorie einfügen.
+
+**Ablauf für Kund:innen:** Tickets wählen → E-Mail-Verifizierung → „Weiter zur Online-Zahlung“ → Stripe-Bezahlseite
+(Kreditkarte, Apple Pay, Google Pay, Klarna u. a.) → automatische Rückkehr in den Shop → **Tickets sofort gültig**,
+QR-Code sichtbar und PDF-Download verfügbar. Wird die Zahlung abgebrochen, bleibt die Bestellung offen und kann
+unter *Meine Tickets* über **„Jetzt online bezahlen“** abgeschlossen werden.
+
+Hinweise:
+- Bei Online-Zahlung kann pro Bestellung nur **eine Ticketkategorie** gewählt werden (Stripe-Bezahlseite = ein Produkt).
+  Mehrere Tickets derselben Kategorie sind kein Problem.
+- Kategorien **ohne** Payment-Link laufen weiterhin über den manuellen Weg (Reservierung → Überweisung/Abendkassa → im Dashboard „als bezahlt markieren“).
+- **Kontrolle:** Die Freischaltung nach Zahlung passiert im Browser der Kund:innen (statisches Hosting, kein Server).
+  Gleiche daher Online-Bestellungen regelmäßig mit dem Stripe-Dashboard ab – dort steht bei jeder Zahlung die Bestellnummer
+  (als *client_reference_id*). Für eine fälschungssichere, vollautomatische Bestätigung wäre ein kleines Backend mit
+  Stripe-Webhooks nötig; das lässt sich später ergänzen.
+
 ## Ablauf für Käufer:innen (Zahlung vor Ticketfreigabe)
 
 1. Tickets auf `tickets.html` auswählen → *Zur Kassa*.

@@ -13,6 +13,7 @@
     settings: 'cm_shop_settings',
     codes:    'cm_shop_codes',
     session:  'cm_shop_session',
+    pending:  'cm_shop_pending_payment',
     admin:    'cm_shop_admin_session',
     checkins: 'cm_shop_checkins'
   };
@@ -80,9 +81,9 @@
         description: 'Der große Ball des Jahres – Live-Band, DJ, Mitternachtseinlage.',
         active: true,
         categories: [
-          { id: uid('cat'), name: 'Standard', price: 25, quota: 400, description: 'Regulärer Balleintritt', active: true, maxPerOrder: 10 },
-          { id: uid('cat'), name: 'VIP', price: 59, quota: 60, description: 'VIP-Bereich, Welcome-Drink, eigene Garderobe', active: true, maxPerOrder: 6 },
-          { id: uid('cat'), name: 'Schüler:innen ermäßigt', price: 18, quota: 250, description: 'Nur mit gültigem Schülerausweis', active: true, maxPerOrder: 10 }
+          { id: uid('cat'), name: 'Standard', price: 25, quota: 400, description: 'Regulärer Balleintritt', active: true, maxPerOrder: 10, paymentLink: '' },
+          { id: uid('cat'), name: 'VIP', price: 59, quota: 60, description: 'VIP-Bereich, Welcome-Drink, eigene Garderobe', active: true, maxPerOrder: 6, paymentLink: '' },
+          { id: uid('cat'), name: 'Schüler:innen ermäßigt', price: 18, quota: 250, description: 'Nur mit gültigem Schülerausweis', active: true, maxPerOrder: 10, paymentLink: '' }
         ]
       }
     ];
@@ -238,7 +239,8 @@
         if (ci.qty > rest) throw new Error('Für „' + cat.name + '“ sind nur noch ' + rest + ' Tickets verfügbar.');
         items.push({
           eventId: ev.id, eventName: ev.name, eventDate: ev.date, eventLocation: ev.location,
-          categoryId: cat.id, categoryName: cat.name, price: cat.price, qty: ci.qty
+          categoryId: cat.id, categoryName: cat.name, price: cat.price, qty: ci.qty,
+          paymentLink: cat.paymentLink || ''
         });
         total += cat.price * ci.qty;
       }
@@ -286,12 +288,13 @@
       return this.getOrders().filter(o => o.email === email);
     },
 
-    setOrderStatus(orderId, status) {
+    setOrderStatus(orderId, status, via) {
       const orders = this.getOrders();
       const o = orders.find(x => x.id === orderId);
       if (o) {
         const wasPaid = o.status === 'bezahlt';
         o.status = status;
+        if (status === 'bezahlt' && via) { o.paidVia = via; o.paidAt = new Date().toISOString(); }
         this.saveOrders(orders);
         // Zahlungsbestätigung senden (best effort)
         if (status === 'bezahlt' && !wasPaid && this.emailConfigured()) {
@@ -306,6 +309,32 @@
         }
       }
       return o;
+    },
+
+    /* --- Online-Zahlung (Stripe Payment Links) --- */
+    // Payment-Link der Bestellung (nur wenn alle Positionen denselben Link haben)
+    orderPaymentLink(order) {
+      const links = [...new Set(order.items.map(i => i.paymentLink || ''))];
+      return (links.length === 1 && links[0]) ? links[0] : '';
+    },
+    paymentRedirectUrl(order) {
+      const link = this.orderPaymentLink(order);
+      if (!link) return '';
+      return link + (link.includes('?') ? '&' : '?') +
+        'client_reference_id=' + encodeURIComponent(order.id) +
+        '&prefilled_email=' + encodeURIComponent(order.email);
+    },
+    setPendingPayment(orderId) { localStorage.setItem(KEYS.pending, orderId); },
+    // Rückkehr von der Bezahlseite: merkt sich, welche Bestellung bezahlt wurde
+    consumePendingPayment() {
+      const id = localStorage.getItem(KEYS.pending);
+      localStorage.removeItem(KEYS.pending);
+      return id || null;
+    },
+    confirmOnlinePayment(orderId) {
+      const o = this.getOrders().find(x => x.id === orderId);
+      if (!o || o.status !== 'offen') return null;
+      return this.setOrderStatus(orderId, 'bezahlt', 'stripe');
     },
 
     /* --- Check-in --- */

@@ -199,13 +199,15 @@
   }
 
   function catRowHTML(c) {
-    c = c || { id: S.uid('cat'), name: '', price: '', quota: '', description: '', active: true, maxPerOrder: 10 };
+    c = c || { id: S.uid('cat'), name: '', price: '', quota: '', description: '', active: true, maxPerOrder: 10, paymentLink: '' };
     return '<div class="admin-cat" data-cat="' + c.id + '">' +
       '<div style="flex:2 1 160px"><label>Name</label><input type="text" class="c-name" value="' + esc(c.name) + '" placeholder="z. B. VIP"></div>' +
       '<div><label>Preis (€)</label><input type="number" class="c-price" min="0" step="0.5" value="' + esc(c.price) + '"></div>' +
       '<div><label>Kontingent</label><input type="number" class="c-quota" min="0" step="1" value="' + esc(c.quota) + '"></div>' +
       '<div><label>Max./Bestellung</label><input type="number" class="c-max" min="1" step="1" value="' + esc(c.maxPerOrder || 10) + '"></div>' +
       '<div style="flex:2 1 200px"><label>Beschreibung</label><input type="text" class="c-desc" value="' + esc(c.description) + '"></div>' +
+      '<div style="flex:3 1 260px"><label>Stripe Payment-Link (Online-Zahlung, optional)</label>' +
+      '<input type="text" class="c-link" value="' + esc(c.paymentLink || '') + '" placeholder="https://buy.stripe.com/…"></div>' +
       '<div style="flex:0 0 auto"><label class="switch" style="margin:0 0 8px"><input type="checkbox" class="c-active"' + (c.active ? ' checked' : '') + '> aktiv</label>' +
       '<button type="button" class="btn btn-danger btn-sm c-remove">Entfernen</button></div>' +
       '</div>';
@@ -249,6 +251,7 @@
       quota: parseInt(row.querySelector('.c-quota').value, 10) || 0,
       maxPerOrder: parseInt(row.querySelector('.c-max').value, 10) || 10,
       description: row.querySelector('.c-desc').value.trim(),
+      paymentLink: row.querySelector('.c-link').value.trim(),
       active: row.querySelector('.c-active').checked
     })).filter(c => c.name);
     const ev = {
@@ -285,7 +288,10 @@
         '<td>' + esc(o.email) + '</td>' +
         '<td>' + o.items.map(i => i.qty + '× ' + esc(i.categoryName)).join('<br>') + '</td>' +
         '<td>' + S.fmtEUR.format(o.total) + '</td>' +
-        '<td><span class="badge ' + esc(o.status) + '">' + esc(o.status) + '</span></td>' +
+        '<td><span class="badge ' + esc(o.status) + '">' + esc(o.status) +
+        (o.paidVia === 'stripe' ? ' · online' : '') + '</span>' +
+        (o.paidVia === 'stripe' ? '<div class="hint" style="margin-top:4px">Stripe – im Stripe-Dashboard gegenprüfen</div>' : '') +
+        '</td>' +
         '<td style="white-space:nowrap">' +
         (o.status === 'offen' ? '<button class="btn btn-ghost btn-sm" data-paid="' + o.id + '">Als bezahlt markieren</button> ' : '') +
         (o.status === 'bezahlt' ? '<button class="btn btn-ghost btn-sm" data-pdf="' + o.id + '">Tickets-PDF</button> ' : '') +
