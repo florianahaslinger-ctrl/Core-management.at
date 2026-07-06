@@ -94,9 +94,9 @@ Hinweise:
   sind im Dashboard auf einem anderen Gerät **nicht** sichtbar. Für einen echten zentralen Verkauf braucht es
   ein Backend (z. B. Supabase/Firebase) oder einen Ticketing-Dienst – die Shop-Oberfläche ist dafür vorbereitet,
   da die gesamte Datenlogik in `assets/store.js` gekapselt ist.
-- **Keine Online-Zahlung integriert.** Bestellungen werden als *offen* angelegt; Zahlung z. B. per Überweisung
-  oder Abendkassa, danach im Dashboard *als bezahlt markieren* – erst dann werden QR-Code und PDF freigeschaltet.
-  (Stripe Payment Links lassen sich später ergänzen.)
+- **Online-Zahlung über Stripe Payment Links** (siehe eigener Abschnitt oben). Kategorien ohne Payment-Link
+  werden als *offen* angelegt; Zahlung z. B. per Überweisung oder Abendkassa, danach im Dashboard
+  *als bezahlt markieren* – erst dann werden QR-Code und PDF freigeschaltet.
 - **Die Admin-PIN ist Komfortschutz, keine echte Sicherheit** – der Quellcode ist öffentlich einsehbar.
 
 ## Dateien
@@ -107,3 +107,5 @@ Hinweise:
 - `assets/shop.css` – gemeinsames Design (Gold/Schwarz wie Hauptseite)
 - `assets/qrcode.js` – QR-Code-Generator (MIT-Lizenz, lokal eingebunden – keine externen Abhängigkeiten)
 - `assets/ticket-pdf.js` – PDF-Erzeugung der Tickets (ohne externe Bibliotheken)
+
+<!-- Deploy-Marker: 2026-07-06T14:10:56Z -->
