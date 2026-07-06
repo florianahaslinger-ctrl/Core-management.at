@@ -200,7 +200,9 @@
       renderEvents(); renderCartBar();
       $('successSub').textContent = 'Bestellnummer ' + order.id + ' · ' +
         order.tickets.length + ' Ticket(s) · ' + S.fmtEUR.format(order.total) +
-        (S.emailConfigured() ? ' – eine Bestätigung wurde per E-Mail gesendet.' : '');
+        ' – deine Tickets sind verbindlich reserviert. Nach Zahlungseingang werden sie ' +
+        'freigeschaltet und du kannst sie inkl. QR-Code als PDF herunterladen.' +
+        (S.emailConfigured() ? ' Eine Bestätigung wurde per E-Mail gesendet.' : '');
       $('successTickets').innerHTML = order.tickets.map(t => ticketHTML(t, order)).join('');
       openModal('successModal');
       drawQRCodes($('successTickets'));
@@ -211,15 +213,19 @@
 
   /* ---------- Meine Tickets ---------- */
   function ticketHTML(t, order) {
+    const paid = order.status === 'bezahlt';
     return '<div class="ticket">' +
-      '<div class="qr" data-code="' + esc(t.code) + '"></div>' +
+      (paid
+        ? '<div class="qr" data-code="' + esc(t.code) + '"></div>'
+        : '<div class="qr qr-pending"><div>QR-Code nach<br>Zahlungseingang</div></div>') +
       '<div class="tinfo">' +
       '<div class="tcode">' + esc(t.code) + '</div>' +
       '<div>' + esc(t.categoryName) + ' – ' + esc(t.eventName) + '</div>' +
       '<div class="tmeta">' + fmtDate(t.eventDate) + (t.eventLocation ? ' · ' + esc(t.eventLocation) : '') +
       ' · ' + S.fmtEUR.format(t.price) + '</div>' +
       '<div style="margin-top:6px">' +
-      '<span class="badge ' + esc(order.status) + '">' + esc(order.status) + '</span> ' +
+      '<span class="badge ' + esc(order.status) + '">' +
+      (order.status === 'offen' ? 'reserviert – Zahlung ausstehend' : esc(order.status)) + '</span> ' +
       (t.checkedIn ? '<span class="badge checked">eingecheckt</span>' : '') +
       '</div></div></div>';
   }
@@ -228,14 +234,12 @@
     root.querySelectorAll('.qr[data-code]').forEach(el => {
       if (el.dataset.done) return;
       el.dataset.done = '1';
-      if (window.QRCode && QRCode.toCanvas) {
-        const cv = document.createElement('canvas');
+      try {
+        const cv = window.CMTicketPDF.qrCanvas(el.dataset.code, 96);
+        cv.style.width = cv.style.height = '100%';
         el.appendChild(cv);
-        QRCode.toCanvas(cv, el.dataset.code, { width: 96, margin: 0 }, function (err) {
-          if (err) el.innerHTML = '<div style="color:#000;font-size:11px;word-break:break-all;padding:4px">' + el.dataset.code + '</div>';
-        });
-      } else {
-        el.innerHTML = '<div style="color:#000;font-size:11px;word-break:break-all;padding:4px">' + el.dataset.code + '</div>';
+      } catch (e) {
+        el.innerHTML = '<div style="color:#000;font-size:11px;word-break:break-all;padding:4px">' + esc(el.dataset.code) + '</div>';
       }
     });
   }
@@ -257,10 +261,23 @@
     box.innerHTML = orders.map(o =>
       '<div style="margin-bottom:26px"><div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">' +
       '<b>Bestellung ' + esc(o.id) + '</b>' +
-      '<span class="badge ' + esc(o.status) + '">' + esc(o.status) + '</span>' +
+      '<span class="badge ' + esc(o.status) + '">' +
+      (o.status === 'offen' ? 'reserviert – Zahlung ausstehend' : esc(o.status)) + '</span>' +
       '<span class="sub">' + new Date(o.createdAt).toLocaleString('de-AT') + ' · ' + S.fmtEUR.format(o.total) + '</span>' +
-      '</div>' + o.tickets.map(t => ticketHTML(t, o)).join('') + '</div>').join('');
+      (o.status === 'bezahlt'
+        ? '<button class="btn btn-ghost btn-sm" data-pdf="' + esc(o.id) + '">Tickets als PDF</button>'
+        : '') +
+      '</div>' +
+      (o.status === 'offen'
+        ? '<p class="hint" style="margin-top:6px">' + esc(S.getSettings().checkoutNote) +
+          ' Nach Zahlungseingang werden die Tickets freigeschaltet (QR-Code + PDF).</p>'
+        : '') +
+      o.tickets.map(t => ticketHTML(t, o)).join('') + '</div>').join('');
     drawQRCodes(box);
+    box.querySelectorAll('[data-pdf]').forEach(b => b.addEventListener('click', () => {
+      const order = S.ordersForUser(user).find(o => o.id === b.dataset.pdf);
+      if (order) window.CMTicketPDF.download(order);
+    }));
   };
 
   /* ---------- Init ---------- */
