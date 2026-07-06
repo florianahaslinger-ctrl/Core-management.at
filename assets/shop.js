@@ -176,19 +176,39 @@
   }
 
   /* ---------- Checkout ---------- */
+  function cartHasOnlinePayment(lines) {
+    return lines.some(l => l.cat.paymentLink);
+  }
+
   function openCheckout() {
     const user = S.currentUser();
     if (!user) { openLogin(openCheckout); return; }
     const { total, lines } = cartDetails();
     if (!lines.length) return;
+    const online = cartHasOnlinePayment(lines);
     $('checkoutEmail').textContent = 'Bestellung für: ' + user;
     $('checkoutItems').innerHTML = lines.map(l =>
       '<div class="cat-row"><div class="cat-info"><div class="name">' + l.qty + '× ' + esc(l.cat.name) + '</div>' +
       '<div class="desc">' + esc(l.ev.name) + ' · ' + fmtDate(l.ev.date) + '</div></div>' +
       '<div class="cat-price">' + S.fmtEUR.format(l.sum) + '</div></div>').join('');
     $('checkoutTotal').textContent = 'Gesamt: ' + S.fmtEUR.format(total);
-    $('checkoutNote').textContent = S.getSettings().checkoutNote;
     msg($('checkoutMsg'), '');
+    if (online && lines.length > 1) {
+      $('checkoutNote').textContent = '';
+      $('btnPlaceOrder').disabled = true;
+      msg($('checkoutMsg'), 'Online-Zahlung: Bitte bestelle jede Ticketkategorie einzeln – ' +
+        'die Zahlung erfolgt pro Kategorie über eine eigene Bezahlseite.', 'error');
+    } else if (online) {
+      $('btnPlaceOrder').disabled = false;
+      $('btnPlaceOrder').textContent = 'Weiter zur Online-Zahlung';
+      $('checkoutNote').textContent = 'Du wirst zur sicheren Bezahlseite (Stripe) weitergeleitet. ' +
+        'Wichtig: Wähle dort die Menge ' + lines[0].qty + '. ' +
+        'Nach erfolgreicher Zahlung kommst du automatisch zurück und deine Tickets werden freigeschaltet.';
+    } else {
+      $('btnPlaceOrder').disabled = false;
+      $('btnPlaceOrder').textContent = 'Verbindlich bestellen';
+      $('checkoutNote').textContent = S.getSettings().checkoutNote;
+    }
     openModal('checkoutModal');
   }
 
@@ -198,6 +218,13 @@
       cart = {};
       closeModal('checkoutModal');
       renderEvents(); renderCartBar();
+      const payUrl = S.paymentRedirectUrl(order);
+      if (payUrl) {
+        // Online-Zahlung: Bestellung merken und zur Stripe-Bezahlseite weiterleiten
+        S.setPendingPayment(order.id);
+        window.location.href = payUrl;
+        return;
+      }
       $('successSub').textContent = 'Bestellnummer ' + order.id + ' · ' +
         order.tickets.length + ' Ticket(s) · ' + S.fmtEUR.format(order.total) +
         ' – deine Tickets sind verbindlich reserviert. Nach Zahlungseingang werden sie ' +
@@ -209,6 +236,29 @@
     } catch (e) {
       msg($('checkoutMsg'), e.message, 'error');
     }
+  }
+
+  /* Rückkehr von der Stripe-Bezahlseite (?paid=1) */
+  function handlePaymentReturn() {
+    const params = new URLSearchParams(location.search);
+    if (params.get('paid') !== '1') return;
+    history.replaceState(null, '', location.pathname + location.hash);
+    const orderId = S.consumePendingPayment();
+    if (!orderId) return;
+    const order = S.confirmOnlinePayment(orderId);
+    if (!order) return;
+    renderEvents(); renderMyTickets();
+    $('successSub').textContent = 'Zahlung erfolgreich! Bestellnummer ' + order.id + ' · ' +
+      order.tickets.length + ' Ticket(s) · ' + S.fmtEUR.format(order.total) +
+      ' – deine Tickets sind jetzt gültig und stehen unten als PDF bereit.' +
+      (S.emailConfigured() ? ' Eine Bestätigung wurde per E-Mail gesendet.' : '');
+    $('successTickets').innerHTML =
+      '<p style="margin:10px 0"><button class="btn btn-gold btn-sm" id="btnSuccessPdf">Tickets als PDF herunterladen</button></p>' +
+      order.tickets.map(t => ticketHTML(t, order)).join('');
+    openModal('successModal');
+    drawQRCodes($('successTickets'));
+    const pdfBtn = document.getElementById('btnSuccessPdf');
+    if (pdfBtn) pdfBtn.addEventListener('click', () => window.CMTicketPDF.download(order));
   }
 
   /* ---------- Meine Tickets ---------- */
@@ -267,16 +317,29 @@
       (o.status === 'bezahlt'
         ? '<button class="btn btn-ghost btn-sm" data-pdf="' + esc(o.id) + '">Tickets als PDF</button>'
         : '') +
+      (o.status === 'offen' && S.orderPaymentLink(o)
+        ? '<button class="btn btn-gold btn-sm" data-pay="' + esc(o.id) + '">Jetzt online bezahlen</button>'
+        : '') +
       '</div>' +
       (o.status === 'offen'
-        ? '<p class="hint" style="margin-top:6px">' + esc(S.getSettings().checkoutNote) +
-          ' Nach Zahlungseingang werden die Tickets freigeschaltet (QR-Code + PDF).</p>'
+        ? '<p class="hint" style="margin-top:6px">' +
+          (S.orderPaymentLink(o)
+            ? 'Die Zahlung wurde noch nicht abgeschlossen. Über „Jetzt online bezahlen“ kannst du sie nachholen – danach werden die Tickets freigeschaltet (QR-Code + PDF).'
+            : esc(S.getSettings().checkoutNote) + ' Nach Zahlungseingang werden die Tickets freigeschaltet (QR-Code + PDF).') +
+          '</p>'
         : '') +
       o.tickets.map(t => ticketHTML(t, o)).join('') + '</div>').join('');
     drawQRCodes(box);
     box.querySelectorAll('[data-pdf]').forEach(b => b.addEventListener('click', () => {
       const order = S.ordersForUser(user).find(o => o.id === b.dataset.pdf);
       if (order) window.CMTicketPDF.download(order);
+    }));
+    box.querySelectorAll('[data-pay]').forEach(b => b.addEventListener('click', () => {
+      const order = S.ordersForUser(user).find(o => o.id === b.dataset.pay);
+      if (order) {
+        S.setPendingPayment(order.id);
+        window.location.href = S.paymentRedirectUrl(order);
+      }
     }));
   };
 
@@ -294,4 +357,5 @@
   renderEvents();
   renderCartBar();
   renderMyTickets();
+  handlePaymentReturn();
 })();
