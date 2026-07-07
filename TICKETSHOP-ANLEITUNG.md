@@ -2,113 +2,60 @@
 
 ## Überblick
 
-Der Ticketshop besteht aus zwei Seiten im Design der Hauptseite:
+Der Ticketshop ist ein vollwertiger Onlineshop mit zentraler Datenbank und echter Online-Zahlung:
 
 | Seite | Zweck |
 |---|---|
-| `tickets.html` | Öffentlicher Shop: Tickets auswählen, mit E-Mail + Verifizierungscode anmelden, bestellen, eigene Tickets mit QR-Code ansehen |
-| `dashboard.html` | Adminbereich (PIN-geschützt): Statistiken & Diagramme, Events & Ticketkategorien verwalten, Bestellungen, Check-in, Einstellungen |
+| `tickets.html` | Öffentlicher Shop: Tickets auswählen, Anmeldung per E-Mail-Verifizierung, Online-Zahlung über Stripe, eigene Tickets mit QR-Code ansehen und als PDF laden |
+| `dashboard.html` | Adminbereich: Statistiken & Diagramme, Events & Ticketkategorien verwalten, Bestellungen, Check-in, Admin-Verwaltung |
 
-**Empfohlen: Backend-Modus (Supabase + Stripe).** Mit dem Backend werden Bestellungen zentral gespeichert,
-E-Mail-Codes automatisch versendet und Zahlungen fälschungssicher per Stripe-Webhook bestätigt –
-Einrichtung siehe **`BACKEND-ANLEITUNG.md`**. Ohne Backend-Konfiguration (in `assets/config.js`) läuft der Shop
-im lokalen Demo-Modus: alle Daten liegen dann nur im `localStorage` des jeweiligen Browsers, und es gelten
-die Hinweise weiter unten in dieser Datei (EmailJS, Payment Links, PIN).
+**Architektur:**
+- **Supabase** (Projekt „Ticketsystem“): zentrale Datenbank für Events, Kategorien, Bestellungen und Tickets;
+  E-Mail-Login mit Verifizierung; Zugriffsschutz über Row Level Security.
+- **Stripe Checkout:** Käufer:innen zahlen auf der sicheren Stripe-Bezahlseite (Kreditkarte, Apple Pay, Google Pay u. a.).
+  Ein **Webhook bestätigt die Zahlung serverseitig** – erst dann werden die Tickets erzeugt und freigeschaltet.
+  Fälschen der „Zahlung erfolgreich“-Rückkehr bringt nichts: ohne bestätigte Stripe-Zahlung gibt es keine Tickets.
+- Der geheime Stripe-Schlüssel liegt ausschließlich in den Supabase-Edge-Functions (Server), niemals im öffentlichen Code.
 
-## Erste Schritte
+## Kaufablauf
 
-1. **Dashboard öffnen:** `core-management.at/dashboard.html`
-2. **Standard-PIN:** `2468` → bitte sofort unter *Einstellungen → Admin-PIN ändern* ersetzen.
-3. **Events anlegen:** Tab *Events & Tickets* → *+ Neues Event*. Pro Event beliebig viele Ticketkategorien
-   (Name, Preis, Kontingent, Max. pro Bestellung, Beschreibung, aktiv/inaktiv). Alles ist jederzeit modular umstellbar.
-4. Ein Demo-Event („Schulball 2026“) ist beim ersten Aufruf vorangelegt und kann bearbeitet oder gelöscht werden.
+1. Tickets auf `tickets.html` wählen → *Zur Kassa*.
+2. E-Mail-Adresse eingeben → Supabase sendet eine Anmelde-E-Mail (Link anklicken oder Code eingeben).
+3. *Weiter zur Online-Zahlung* → Stripe-Bezahlseite → zahlen.
+4. Automatische Rückkehr in den Shop: Tickets sind sofort gültig – mit **QR-Code + klassischem Ticketcode**
+   und **PDF-Download** (eine Seite pro Ticket).
+5. Abgebrochene Zahlungen erzeugen keine Tickets; die Bestellung bleibt als „offen“ sichtbar und kann einfach neu ausgelöst werden.
 
-## E-Mail-Verifizierung einrichten (EmailJS)
+## Dashboard
 
-Ohne Konfiguration läuft der Shop im **Demo-Modus**: Der 6-stellige Code wird direkt im Browser angezeigt
-(mit deutlichem Hinweis). Für echten E-Mail-Versand:
+Anmeldung mit einer **Admin-E-Mail-Adresse** (gleicher Login-Flow). Wer Admin ist, steht in der Datenbank –
+verwaltbar im Dashboard unter *Einstellungen → Admins verwalten*. Erster Admin: `florian.a.haslinger@gmail.com`.
 
-1. Kostenloses Konto auf [emailjs.com](https://www.emailjs.com) anlegen (200 E-Mails/Monat gratis).
-2. Unter *Email Services* einen Dienst verbinden (z. B. Gmail) → **Service-ID** notieren.
-3. Unter *Email Templates* ein Template anlegen:
-   - **To Email:** `{{to_email}}`
-   - **Subject:** `{{subject}}`
-   - **Inhalt:** z. B. `{{message}}` – der Code steht zusätzlich in `{{passcode}}`.
-   - **Template-ID** notieren.
-4. Unter *Account → General* den **Public Key** kopieren.
-5. Alle drei Werte im Dashboard unter *Einstellungen → E-Mail-Versand* eintragen, speichern
-   und mit *Test-E-Mail senden* prüfen.
+- **Übersicht:** Umsatz (nur bezahlte Bestellungen), verkaufte Tickets, Check-in-Quote; Diagramme; Auslastung je Kategorie.
+- **Events & Tickets:** vollständig modular – Events und Kategorien anlegen, Preise/Kontingente ändern, aktivieren/deaktivieren, löschen.
+- **Bestellungen:** suchen/filtern, CSV-Export, Tickets-PDF, stornieren (Kontingent wird frei; Rückerstattung im Stripe-Dashboard).
+- **Check-in:** Ticketcode scannen/eingeben → einmalige Entwertung; unbezahlte, stornierte oder bereits entwertete Tickets werden abgewiesen.
 
-Danach erhalten Käufer:innen Verifizierungscodes und Bestellbestätigungen per E-Mail.
+## Wichtig für den echten Betrieb
 
-## Online-Zahlung einrichten (Stripe Payment Links)
+1. **E-Mail-Versand (dringend empfohlen):** Ohne eigenen SMTP-Server verschickt Supabase nur **2 Anmelde-E-Mails pro Stunde** –
+   für den Verkaufsstart zwingend ändern: Supabase-Dashboard → *Authentication → Emails → SMTP Settings* →
+   kostenlosen Anbieter hinterlegen (z. B. Resend oder Brevo). Danach kann dort auch die E-Mail-Vorlage angepasst werden –
+   mit `{{ .Token }}` steht der 6-stellige Code direkt in der E-Mail.
+2. **Stripe:** Auszahlungen, Rückerstattungen und Belege im Stripe-Dashboard (dashboard.stripe.com).
+   Bei jeder Zahlung steht die Bestellnummer als *client_reference_id*.
+3. **Schlüssel geheim halten:** Der `sk_live_…`-Schlüssel und das Supabase-Access-Token gehören nirgendwo in den Code
+   oder in Chats. Nach Einrichtung/Weitergabe: in Stripe rotieren (Entwickler → API-Schlüssel) und den neuen Wert als
+   Secret `STRIPE_SECRET_KEY` in Supabase setzen (*Edge Functions → Secrets*).
+4. Der im Frontend sichtbare Supabase-„anon“-Schlüssel ist **öffentlich vorgesehen** und durch Row Level Security abgesichert.
 
-Damit Käufer:innen **direkt online bezahlen müssen**, bevor sie ihre Tickets bekommen:
+## Technische Komponenten
 
-1. Kostenloses Konto auf [stripe.com](https://stripe.com) erstellen (keine Fixkosten, Gebühr pro Transaktion).
-2. Im Stripe-Dashboard unter *Produktkatalog* für **jede Ticketkategorie ein Produkt** mit dem passenden Preis anlegen (z. B. „Schulball 2026 – VIP“, 59 €).
-3. Unter *Zahlungslinks* pro Produkt einen **Payment Link** erstellen:
-   - **„Kunden können Menge anpassen“ aktivieren** (damit mehrere Tickets auf einmal bezahlt werden können).
-   - Unter *Nach der Zahlung* → **„Kunden zu Ihrer Website weiterleiten“**: `https://core-management.at/tickets.html?paid=1`
-4. Den Link (`https://buy.stripe.com/…`) im Ticketshop-Dashboard unter *Events & Tickets → Bearbeiten* in das Feld
-   **„Stripe Payment-Link“** der jeweiligen Kategorie einfügen.
-
-**Ablauf für Kund:innen:** Tickets wählen → E-Mail-Verifizierung → „Weiter zur Online-Zahlung“ → Stripe-Bezahlseite
-(Kreditkarte, Apple Pay, Google Pay, Klarna u. a.) → automatische Rückkehr in den Shop → **Tickets sofort gültig**,
-QR-Code sichtbar und PDF-Download verfügbar. Wird die Zahlung abgebrochen, bleibt die Bestellung offen und kann
-unter *Meine Tickets* über **„Jetzt online bezahlen“** abgeschlossen werden.
-
-Hinweise:
-- Bei Online-Zahlung kann pro Bestellung nur **eine Ticketkategorie** gewählt werden (Stripe-Bezahlseite = ein Produkt).
-  Mehrere Tickets derselben Kategorie sind kein Problem.
-- Kategorien **ohne** Payment-Link laufen weiterhin über den manuellen Weg (Reservierung → Überweisung/Abendkassa → im Dashboard „als bezahlt markieren“).
-- **Kontrolle:** Die Freischaltung nach Zahlung passiert im Browser der Kund:innen (statisches Hosting, kein Server).
-  Gleiche daher Online-Bestellungen regelmäßig mit dem Stripe-Dashboard ab – dort steht bei jeder Zahlung die Bestellnummer
-  (als *client_reference_id*). Für eine fälschungssichere, vollautomatische Bestätigung wäre ein kleines Backend mit
-  Stripe-Webhooks nötig; das lässt sich später ergänzen.
-
-## Ablauf für Käufer:innen (Zahlung vor Ticketfreigabe)
-
-1. Tickets auf `tickets.html` auswählen → *Zur Kassa*.
-2. E-Mail-Adresse eingeben → 6-stelliger Code kommt per E-Mail (10 Minuten gültig, max. 5 Versuche, 60 s Sperre zwischen Sendungen).
-3. Code eingeben → Bestellung abschließen. Die Tickets sind jetzt **reserviert** (Status *offen*),
-   aber **noch nicht gültig** – es gibt noch keinen QR-Code und kein PDF.
-4. Zahlung erfolgt laut Checkout-Hinweis (z. B. Überweisung oder Abendkassa – Text im Dashboard einstellbar).
-5. Im Dashboard unter *Bestellungen* die Bestellung **als bezahlt markieren** → erst dadurch werden die Tickets gültig.
-   Ist EmailJS konfiguriert, bekommt der/die Käufer:in automatisch eine Zahlungsbestätigung per E-Mail.
-6. Unter *Meine Tickets* erscheinen jetzt **QR-Code + klassischer Ticketcode** (beide gleichwertig),
-   und die Tickets können als **PDF heruntergeladen** werden (eine Seite pro Ticket, mit QR-Code und Code zum Vorzeigen).
-   Auch im Dashboard gibt es pro bezahlter Bestellung einen *Tickets-PDF*-Button.
-
-**Wichtig:** Der Check-in akzeptiert nur Tickets aus bezahlten Bestellungen – unbezahlte oder stornierte Tickets werden abgewiesen.
-
-## Dashboard-Funktionen
-
-- **Übersicht:** Umsatz, verkaufte Tickets, Check-in-Quote, registrierte Käufer:innen;
-  Diagramme (Verkäufe der letzten 14 Tage, Umsatz je Kategorie); Auslastung je Kontingent.
-- **Events & Tickets:** Events und Kategorien anlegen, bearbeiten, aktivieren/deaktivieren, löschen.
-- **Bestellungen:** Suchen/filtern, als *bezahlt* markieren, stornieren (Kontingent wird wieder frei), CSV-Export (Excel-kompatibel).
-- **Check-in:** Ticketcode eingeben/scannen → Ticket wird entwertet; Doppel-Check-ins und stornierte Tickets werden abgewiesen.
-- **Einstellungen:** EmailJS, Checkout-Hinweistext, Admin-PIN, Daten-Reset.
-
-## Wichtige Einschränkungen (statisches Hosting)
-
-- **Daten sind pro Browser/Gerät gespeichert.** Bestellungen, die Kund:innen auf ihren Geräten aufgeben,
-  sind im Dashboard auf einem anderen Gerät **nicht** sichtbar. Für einen echten zentralen Verkauf braucht es
-  ein Backend (z. B. Supabase/Firebase) oder einen Ticketing-Dienst – die Shop-Oberfläche ist dafür vorbereitet,
-  da die gesamte Datenlogik in `assets/store.js` gekapselt ist.
-- **Online-Zahlung über Stripe Payment Links** (siehe eigener Abschnitt oben). Kategorien ohne Payment-Link
-  werden als *offen* angelegt; Zahlung z. B. per Überweisung oder Abendkassa, danach im Dashboard
-  *als bezahlt markieren* – erst dann werden QR-Code und PDF freigeschaltet.
-- **Die Admin-PIN ist Komfortschutz, keine echte Sicherheit** – der Quellcode ist öffentlich einsehbar.
-
-## Dateien
-
-- `tickets.html` + `assets/shop.js` – Shop
-- `dashboard.html` + `assets/dashboard.js` – Dashboard
-- `assets/store.js` – gesamte Daten- und E-Mail-Logik
-- `assets/shop.css` – gemeinsames Design (Gold/Schwarz wie Hauptseite)
-- `assets/qrcode.js` – QR-Code-Generator (MIT-Lizenz, lokal eingebunden – keine externen Abhängigkeiten)
-- `assets/ticket-pdf.js` – PDF-Erzeugung der Tickets (ohne externe Bibliotheken)
-
-<!-- Deploy-Marker: 2026-07-06T14:10:56Z -->
+- `assets/store.js` – Datenschicht (Supabase-Client, Auth, Bestellungen, Admin-Funktionen)
+- `assets/shop.js` / `assets/dashboard.js` – Seitenlogik
+- `assets/supabase.js` – Supabase-JavaScript-Client (lokal eingebunden)
+- `assets/qrcode.js` – QR-Code-Generator (MIT-Lizenz, lokal)
+- `assets/ticket-pdf.js` – PDF-Erzeugung ohne externe Bibliotheken
+- Supabase Edge Functions: `create-checkout` (legt Bestellung + Stripe-Session an, prüft Kontingente serverseitig),
+  `stripe-webhook` (prüft die Stripe-Signatur, erzeugt Tickets nach bestätigter Zahlung)
+- Stripe-Webhook: `checkout.session.completed` → `https://xfdiuhmgkdujbjhdhvcw.supabase.co/functions/v1/stripe-webhook`
