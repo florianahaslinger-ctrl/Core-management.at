@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="stylesheet" href="assets/shop.css">
+<script src="assets/supabase.js"></script>
 <script src="assets/qrcode.js"></script>
 <script src="assets/ticket-pdf.js"></script>
 </head>
@@ -69,18 +70,15 @@
     </div>
     <div id="loginStep2" style="display:none">
       <div class="msg info show" id="sentInfo"></div>
-      <div id="demoCodeBox" style="display:none">
-        <p class="hint">Demo-Modus: Es ist noch kein E-Mail-Dienst konfiguriert, daher wird der Code hier angezeigt. Im Dashboard unter „Einstellungen“ kann EmailJS für echten Versand hinterlegt werden.</p>
-        <div class="demo-code" id="demoCode"></div>
-      </div>
-      <label for="loginCode">Verifizierungscode</label>
+      <label for="loginCode">Verifizierungscode (aus der E-Mail)</label>
       <input type="text" id="loginCode" class="code-input" maxlength="6" inputmode="numeric" placeholder="••••••">
       <div class="msg" id="loginMsg2"></div>
       <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
         <button class="btn btn-gold" id="btnVerify">Bestätigen</button>
-        <button class="btn btn-ghost btn-sm" id="btnResend">Code erneut senden</button>
+        <button class="btn btn-ghost btn-sm" id="btnResend">E-Mail erneut senden</button>
         <button class="btn btn-ghost btn-sm" onclick="backToStep1()">E-Mail ändern</button>
       </div>
+      <p class="hint" style="margin-top:10px">Tipp: Du kannst auch einfach den Anmelde-Link in der E-Mail anklicken – dann bist du automatisch angemeldet.</p>
     </div>
   </div>
 </div>
@@ -118,8 +116,6 @@
   <div><a href="index.html">Zur Hauptseite</a> · <a href="dashboard.html">Dashboard</a></div>
 </footer>
 
-<script src="assets/config.js"></script>
-<script src="assets/supabase.js"></script>
 <script src="assets/store.js"></script>
 <script src="assets/shop.js"></script>
 </body>

@@ -1,17 +1,15 @@
-/* CORE Management Ticketshop – Shop-Logik (tickets.html) */
+/* CORE Management Ticketshop – Shop-Logik (tickets.html)
+   Backend: Supabase + Stripe Checkout (echte Online-Zahlung). */
 (function () {
   'use strict';
   const S = window.CMStore;
   const $ = id => document.getElementById(id);
 
-  let cart = {};        // { "eventId|categoryId": qty }
-  let EVENTS = [];      // zwischengespeicherte Events
-  let SOLD = {};        // verkaufte Stückzahlen je Kategorie
-  let SETTINGS = null;
+  let cart = {};          // { categoryId: qty }
+  let eventsCache = [];
   let pendingEmail = '';
   let afterLogin = null;
 
-  /* ---------- Meldungen / Modals ---------- */
   function msg(el, text, type) {
     el.textContent = text || '';
     el.className = 'msg' + (text ? ' show ' + (type || 'info') : '');
@@ -23,18 +21,12 @@
     return String(s == null ? '' : s).replace(/[&<>"']/g,
       c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
+
   function fmtDate(iso) {
     if (!iso) return '';
     const d = new Date(iso);
     return d.toLocaleDateString('de-AT', { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric' }) +
       ' · ' + d.toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' }) + ' Uhr';
-  }
-
-  /* ---------- Daten laden ---------- */
-  async function loadData() {
-    [EVENTS, SOLD, SETTINGS] = await Promise.all([
-      S.getEvents(), S.soldByCategory(), S.getSettings()
-    ]);
   }
 
   /* ---------- Navigation / Auth-Status ---------- */
@@ -43,12 +35,7 @@
     const a = $('navAuth');
     if (user) {
       a.textContent = user + ' · Abmelden';
-      a.onclick = async e => {
-        e.preventDefault();
-        await S.logout();
-        renderNav();
-        renderMyTickets();
-      };
+      a.onclick = async e => { e.preventDefault(); await S.logout(); renderNav(); renderMyTickets(); };
     } else {
       a.textContent = 'Anmelden';
       a.onclick = e => { e.preventDefault(); openLogin(); };
@@ -56,23 +43,26 @@
   }
 
   /* ---------- Eventliste ---------- */
-  function renderEvents() {
-    const events = EVENTS.filter(e => e.active);
+  async function renderEvents() {
     const box = $('eventList');
-    if (!events.length) {
+    try {
+      eventsCache = await S.getEvents();
+    } catch (e) {
+      box.innerHTML = '<div class="card"><h2>Shop derzeit nicht erreichbar</h2><p class="sub">' + esc(e.message) + '</p></div>';
+      return;
+    }
+    if (!eventsCache.length) {
       box.innerHTML = '<div class="card"><h2>Derzeit keine Tickets im Verkauf</h2>' +
         '<p class="sub">Schau bald wieder vorbei – neue Events werden hier angekündigt.</p></div>';
       return;
     }
-    box.innerHTML = events.map(ev => {
-      const cats = ev.categories.filter(c => c.active);
-      const rows = cats.map(cat => {
-        const rest = S.remainingOf(cat, SOLD);
-        const key = ev.id + '|' + cat.id;
-        const qty = cart[key] || 0;
+    box.innerHTML = eventsCache.map(ev => {
+      const rows = ev.categories.filter(c => c.active).map(cat => {
+        const rest = cat.remaining;
+        const qty = cart[cat.id] || 0;
         const leftCls = rest === 0 ? 'out' : (rest <= 15 ? 'low' : '');
         const leftTxt = rest === 0 ? 'Ausverkauft' : (rest <= 15 ? 'Nur noch ' + rest + ' verfügbar' : rest + ' verfügbar');
-        const maxQty = Math.min(rest, cat.maxPerOrder || SETTINGS.maxPerOrder || 10);
+        const maxQty = Math.min(rest, cat.maxPerOrder || 10);
         return '<div class="cat-row">' +
           '<div class="cat-info"><div class="name">' + esc(cat.name) + '</div>' +
           (cat.description ? '<div class="desc">' + esc(cat.description) + '</div>' : '') + '</div>' +
@@ -80,9 +70,9 @@
           '<div class="cat-left ' + leftCls + '">' + leftTxt + '</div>' +
           (rest > 0
             ? '<div class="qty">' +
-              '<button type="button" data-key="' + key + '" data-d="-1" aria-label="weniger">−</button>' +
-              '<input type="text" readonly value="' + qty + '" data-qty="' + key + '">' +
-              '<button type="button" data-key="' + key + '" data-d="1" data-max="' + maxQty + '" aria-label="mehr">+</button></div>'
+              '<button type="button" data-key="' + cat.id + '" data-d="-1" aria-label="weniger">−</button>' +
+              '<input type="text" readonly value="' + qty + '" data-qty="' + cat.id + '">' +
+              '<button type="button" data-key="' + cat.id + '" data-d="1" data-max="' + maxQty + '" aria-label="mehr">+</button></div>'
             : '') +
           '</div>';
       }).join('');
@@ -107,24 +97,15 @@
     });
   }
 
-  function cartItems() {
-    return Object.entries(cart).map(([key, qty]) => {
-      const [eventId, categoryId] = key.split('|');
-      return { eventId, categoryId, qty };
-    }).filter(i => i.qty > 0);
-  }
-
   function cartDetails() {
     let total = 0, count = 0;
     const lines = [];
-    cartItems().forEach(i => {
-      const ev = EVENTS.find(e => e.id === i.eventId);
-      const cat = ev && ev.categories.find(c => c.id === i.categoryId);
-      if (!ev || !cat) return;
-      total += cat.price * i.qty;
-      count += i.qty;
-      lines.push({ ev, cat, qty: i.qty, sum: cat.price * i.qty });
-    });
+    eventsCache.forEach(ev => ev.categories.forEach(cat => {
+      const qty = cart[cat.id] || 0;
+      if (!qty) return;
+      total += cat.price * qty; count += qty;
+      lines.push({ ev, cat, qty, sum: cat.price * qty });
+    }));
     return { total, count, lines };
   }
 
@@ -137,7 +118,7 @@
     $('cartSum').textContent = S.fmtEUR.format(total);
   }
 
-  /* ---------- Login-Flow ---------- */
+  /* ---------- Login (E-Mail + Verifizierung) ---------- */
   window.openLogin = function (cb) {
     afterLogin = typeof cb === 'function' ? cb : null;
     $('loginStep1').style.display = '';
@@ -155,28 +136,29 @@
   async function sendCode(isResend) {
     const email = isResend ? pendingEmail : $('loginEmail').value;
     const m1 = isResend ? $('loginMsg2') : $('loginMsg1');
+    const btn = isResend ? $('btnResend') : $('btnSendCode');
     try {
-      msg(m1, 'Code wird gesendet …', 'info');
-      const res = await S.requestCode(email);
+      btn.disabled = true;
+      msg(m1, 'E-Mail wird gesendet …', 'info');
+      await S.requestCode(email);
       pendingEmail = S.normEmail(email);
       $('loginStep1').style.display = 'none';
       $('loginStep2').style.display = '';
-      $('sentInfo').textContent = res.demo
-        ? 'Verifizierungscode für ' + pendingEmail + ' erstellt.'
-        : 'Wir haben einen Code an ' + pendingEmail + ' gesendet. Bitte auch den Spam-Ordner prüfen.';
-      $('demoCodeBox').style.display = res.demo ? '' : 'none';
-      if (res.demo) $('demoCode').textContent = res.code;
-      msg($('loginMsg2'), '');
-      msg($('loginMsg1'), '');
+      $('sentInfo').textContent = 'Wir haben eine E-Mail an ' + pendingEmail +
+        ' gesendet. Klicke den Anmelde-Link darin – oder gib den Code aus der E-Mail hier ein. Bitte auch den Spam-Ordner prüfen.';
+      msg($('loginMsg2'), ''); msg($('loginMsg1'), '');
       $('loginCode').value = '';
       $('loginCode').focus();
     } catch (e) {
       msg(m1, e.message, 'error');
+    } finally {
+      btn.disabled = false;
     }
   }
 
   async function verify() {
     try {
+      $('btnVerify').disabled = true;
       await S.verifyCode(pendingEmail, $('loginCode').value);
       closeModal('loginModal');
       renderNav();
@@ -184,127 +166,81 @@
       if (afterLogin) { const cb = afterLogin; afterLogin = null; cb(); }
     } catch (e) {
       msg($('loginMsg2'), e.message, 'error');
+    } finally {
+      $('btnVerify').disabled = false;
     }
   }
 
-  /* ---------- Checkout ---------- */
+  /* ---------- Checkout (Stripe) ---------- */
   function openCheckout() {
     const user = S.currentUser();
     if (!user) { openLogin(openCheckout); return; }
     const { total, lines } = cartDetails();
     if (!lines.length) return;
-
     $('checkoutEmail').textContent = 'Bestellung für: ' + user;
     $('checkoutItems').innerHTML = lines.map(l =>
       '<div class="cat-row"><div class="cat-info"><div class="name">' + l.qty + '× ' + esc(l.cat.name) + '</div>' +
       '<div class="desc">' + esc(l.ev.name) + ' · ' + fmtDate(l.ev.date) + '</div></div>' +
       '<div class="cat-price">' + S.fmtEUR.format(l.sum) + '</div></div>').join('');
     $('checkoutTotal').textContent = 'Gesamt: ' + S.fmtEUR.format(total);
+    $('checkoutNote').textContent = 'Du wirst zur sicheren Stripe-Bezahlseite weitergeleitet ' +
+      '(Kreditkarte, Apple Pay u. a.). Deine Tickets werden sofort nach erfolgreicher Zahlung freigeschaltet.';
     msg($('checkoutMsg'), '');
-    $('btnPlaceOrder').disabled = false;
-
-    const onlineRemote = S.remote && SETTINGS.stripeEnabled;
-    const onlineLocal = !S.remote && lines.some(l => l.cat.paymentLink);
-
-    if (onlineRemote) {
-      $('btnPlaceOrder').textContent = 'Weiter zur Online-Zahlung';
-      $('checkoutNote').textContent = 'Du wirst zur sicheren Stripe-Bezahlseite weitergeleitet ' +
-        '(Kreditkarte, Apple Pay, Google Pay u. a.). Deine Tickets werden erst nach erfolgreicher Zahlung gültig.';
-    } else if (onlineLocal && lines.length > 1) {
-      $('checkoutNote').textContent = '';
-      $('btnPlaceOrder').disabled = true;
-      msg($('checkoutMsg'), 'Online-Zahlung: Bitte bestelle jede Ticketkategorie einzeln – ' +
-        'die Zahlung erfolgt pro Kategorie über eine eigene Bezahlseite.', 'error');
-    } else if (onlineLocal) {
-      $('btnPlaceOrder').textContent = 'Weiter zur Online-Zahlung';
-      $('checkoutNote').textContent = 'Du wirst zur sicheren Bezahlseite (Stripe) weitergeleitet. ' +
-        'Wichtig: Wähle dort die Menge ' + lines[0].qty + '. ' +
-        'Nach erfolgreicher Zahlung kommst du automatisch zurück und deine Tickets werden freigeschaltet.';
-    } else {
-      $('btnPlaceOrder').textContent = 'Verbindlich bestellen';
-      $('checkoutNote').textContent = SETTINGS.checkoutNote;
-    }
     openModal('checkoutModal');
   }
 
   async function placeOrder() {
-    const btn = $('btnPlaceOrder');
+    const { lines } = cartDetails();
+    const items = lines.map(l => ({ category_id: l.cat.id, qty: l.qty }));
     try {
-      btn.disabled = true;
-      btn.textContent = 'Wird verarbeitet …';
-      const res = await S.placeOrder(cartItems());
+      $('btnPlaceOrder').disabled = true;
+      msg($('checkoutMsg'), 'Bezahlvorgang wird gestartet …', 'info');
+      const res = await S.startCheckout(items);
       cart = {};
-      closeModal('checkoutModal');
-      if (res.checkoutUrl) {
-        S.setPendingPayment(res.orderId);
-        window.location.href = res.checkoutUrl;
-        return;
-      }
-      await refreshShop();
-      const order = res.order || await S.getOrder(res.orderId);
-      $('successSub').textContent = 'Bestellnummer ' + res.orderId + ' · ' +
-        (order ? order.tickets.length : '') + ' Ticket(s) · ' + S.fmtEUR.format(res.total) +
-        ' – deine Tickets sind verbindlich reserviert. Nach Zahlungseingang werden sie ' +
-        'freigeschaltet und du kannst sie inkl. QR-Code als PDF herunterladen.';
-      $('successTickets').innerHTML = order ? order.tickets.map(t => ticketHTML(t, order)).join('') : '';
-      openModal('successModal');
-      drawQRCodes($('successTickets'));
+      window.location.href = res.url;
     } catch (e) {
       msg($('checkoutMsg'), e.message, 'error');
-    } finally {
-      btn.disabled = false;
+      $('btnPlaceOrder').disabled = false;
     }
   }
 
-  async function refreshShop() {
-    await loadData();
-    renderEvents();
-    renderCartBar();
-    await renderMyTickets();
-  }
-
-  /* ---------- Rückkehr von der Bezahlseite ---------- */
+  /* ---------- Rückkehr von Stripe ---------- */
   async function handlePaymentReturn() {
     const params = new URLSearchParams(location.search);
     if (params.get('cancelled') === '1') {
-      history.replaceState(null, '', location.pathname + '#meine-tickets');
+      history.replaceState(null, '', location.pathname + location.hash);
+      msg($('shopMsg'), 'Die Zahlung wurde abgebrochen – es wurden keine Tickets gekauft.', 'info');
       return;
     }
-    if (params.get('paid') !== '1') return;
+    const orderId = params.get('order');
+    if (params.get('paid') !== '1' || !orderId) return;
     history.replaceState(null, '', location.pathname + location.hash);
-
-    let order = null;
-    if (S.remote) {
-      const orderId = params.get('order');
-      if (!orderId) return;
-      // Auf die serverseitige Bestätigung durch den Stripe-Webhook warten
-      $('successSub').textContent = 'Zahlung wird bestätigt – einen Moment bitte …';
-      $('successTickets').innerHTML = '';
-      openModal('successModal');
-      order = await S.waitForPayment(orderId, 30000);
-      if (!order || order.status !== 'bezahlt') {
-        $('successSub').textContent = 'Deine Zahlung wird noch verarbeitet. ' +
-          'Die Tickets erscheinen in wenigen Minuten unter „Meine Tickets“ – bitte Seite später neu laden.';
+    $('successSub').textContent = 'Zahlung wird bestätigt – einen Moment bitte …';
+    $('successTickets').innerHTML = '';
+    openModal('successModal');
+    try {
+      const order = await S.waitForPayment(orderId);
+      if (!order) {
+        $('successSub').textContent = 'Bestellung nicht gefunden. Bitte melde dich mit der E-Mail-Adresse an, mit der du bestellt hast.';
         return;
       }
-    } else {
-      const orderId = S.consumePendingPayment();
-      if (!orderId) return;
-      order = await S.confirmOnlinePayment(orderId);
-      if (!order) return;
+      if (order.status !== 'bezahlt') {
+        $('successSub').textContent = 'Deine Zahlung wird noch verarbeitet. Die Tickets erscheinen in wenigen Minuten unter „Meine Tickets“.';
+        return;
+      }
+      $('successSub').textContent = 'Zahlung erfolgreich! Bestellnummer ' + order.id + ' · ' +
+        order.tickets.length + ' Ticket(s) · ' + S.fmtEUR.format(order.total) +
+        ' – deine Tickets sind jetzt gültig. Eine Zahlungsbestätigung kommt von Stripe per E-Mail.';
+      $('successTickets').innerHTML =
+        '<p style="margin:10px 0"><button class="btn btn-gold btn-sm" id="btnSuccessPdf">Tickets als PDF herunterladen</button></p>' +
+        order.tickets.map(t => ticketHTML(t, order)).join('');
+      drawQRCodes($('successTickets'));
+      const pdfBtn = $('btnSuccessPdf');
+      if (pdfBtn) pdfBtn.addEventListener('click', () => window.CMTicketPDF.download(order));
+      renderEvents(); renderMyTickets();
+    } catch (e) {
+      $('successSub').textContent = 'Fehler beim Prüfen der Zahlung: ' + e.message;
     }
-
-    await refreshShop();
-    $('successSub').textContent = 'Zahlung erfolgreich! Bestellnummer ' + order.id + ' · ' +
-      order.tickets.length + ' Ticket(s) · ' + S.fmtEUR.format(order.total) +
-      ' – deine Tickets sind jetzt gültig und stehen unten als PDF bereit.';
-    $('successTickets').innerHTML =
-      '<p style="margin:10px 0"><button class="btn btn-gold btn-sm" id="btnSuccessPdf">Tickets als PDF herunterladen</button></p>' +
-      order.tickets.map(t => ticketHTML(t, order)).join('');
-    openModal('successModal');
-    drawQRCodes($('successTickets'));
-    const pdfBtn = document.getElementById('btnSuccessPdf');
-    if (pdfBtn) pdfBtn.addEventListener('click', () => window.CMTicketPDF.download(order));
   }
 
   /* ---------- Meine Tickets ---------- */
@@ -320,8 +256,7 @@
       '<div class="tmeta">' + fmtDate(t.eventDate) + (t.eventLocation ? ' · ' + esc(t.eventLocation) : '') +
       ' · ' + S.fmtEUR.format(t.price) + '</div>' +
       '<div style="margin-top:6px">' +
-      '<span class="badge ' + esc(order.status) + '">' +
-      (order.status === 'offen' ? 'reserviert – Zahlung ausstehend' : esc(order.status)) + '</span> ' +
+      '<span class="badge ' + esc(order.status) + '">' + esc(order.status) + '</span> ' +
       (t.checkedIn ? '<span class="badge checked">eingecheckt</span>' : '') +
       '</div></div></div>';
   }
@@ -349,58 +284,31 @@
       return;
     }
     let orders;
-    try {
-      orders = (await S.ordersForUser()).slice().reverse();
-    } catch (e) {
-      box.innerHTML = '<p class="sub">Bestellungen konnten nicht geladen werden: ' + esc(e.message) + '</p>';
-      return;
-    }
+    try { orders = await S.myOrders(); }
+    catch (e) { box.innerHTML = '<p class="sub">Fehler beim Laden: ' + esc(e.message) + '</p>'; return; }
     if (!orders.length) {
       box.innerHTML = '<p class="sub">Angemeldet als <b style="color:var(--gold)">' + esc(user) +
         '</b> – noch keine Bestellungen vorhanden.</p>';
       return;
     }
-    const canRetry = o => o.status === 'offen' &&
-      (S.remote ? SETTINGS.stripeEnabled : !!S.orderPaymentLink(o));
-
     box.innerHTML = orders.map(o =>
       '<div style="margin-bottom:26px"><div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">' +
       '<b>Bestellung ' + esc(o.id) + '</b>' +
       '<span class="badge ' + esc(o.status) + '">' +
-      (o.status === 'offen' ? 'reserviert – Zahlung ausstehend' : esc(o.status)) + '</span>' +
+      (o.status === 'offen' ? 'Zahlung nicht abgeschlossen' : esc(o.status)) + '</span>' +
       '<span class="sub">' + new Date(o.createdAt).toLocaleString('de-AT') + ' · ' + S.fmtEUR.format(o.total) + '</span>' +
       (o.status === 'bezahlt'
         ? '<button class="btn btn-ghost btn-sm" data-pdf="' + esc(o.id) + '">Tickets als PDF</button>'
         : '') +
-      (canRetry(o)
-        ? '<button class="btn btn-gold btn-sm" data-pay="' + esc(o.id) + '">Jetzt online bezahlen</button>'
-        : '') +
       '</div>' +
       (o.status === 'offen'
-        ? '<p class="hint" style="margin-top:6px">' +
-          (canRetry(o)
-            ? 'Die Zahlung wurde noch nicht abgeschlossen. Über „Jetzt online bezahlen“ kannst du sie nachholen – danach werden die Tickets freigeschaltet (QR-Code + PDF).'
-            : esc(SETTINGS.checkoutNote) + ' Nach Zahlungseingang werden die Tickets freigeschaltet (QR-Code + PDF).') +
-          '</p>'
-        : '') +
-      o.tickets.map(t => ticketHTML(t, o)).join('') + '</div>').join('');
+        ? '<p class="hint" style="margin-top:6px">Diese Bestellung wurde nicht bezahlt – einfach die Tickets erneut in den Warenkorb legen und neu bestellen.</p>'
+        : o.tickets.map(t => ticketHTML(t, o)).join('')) +
+      '</div>').join('');
     drawQRCodes(box);
-
     box.querySelectorAll('[data-pdf]').forEach(b => b.addEventListener('click', () => {
       const order = orders.find(o => o.id === b.dataset.pdf);
       if (order) window.CMTicketPDF.download(order);
-    }));
-    box.querySelectorAll('[data-pay]').forEach(b => b.addEventListener('click', async () => {
-      try {
-        b.disabled = true;
-        b.textContent = 'Wird geöffnet …';
-        const url = await S.retryPayment(b.dataset.pay);
-        window.location.href = url;
-      } catch (e) {
-        alert(e.message);
-        b.disabled = false;
-        b.textContent = 'Jetzt online bezahlen';
-      }
     }));
   };
 
@@ -415,20 +323,12 @@
     $('btnPlaceOrder').addEventListener('click', placeOrder);
     $('navMyTickets').addEventListener('click', () => setTimeout(renderMyTickets, 0));
 
-    await S.init();
+    await S.init();          // stellt auch Sessions aus Magic-Link-URLs her
     renderNav();
-    try {
-      await loadData();
-    } catch (e) {
-      $('eventList').innerHTML = '<div class="card"><h2>Shop derzeit nicht erreichbar</h2>' +
-        '<p class="sub">' + esc(e.message) + '</p></div>';
-      return;
-    }
-    renderEvents();
+    await renderEvents();
     renderCartBar();
-    await renderMyTickets();
-    await handlePaymentReturn();
+    renderMyTickets();
+    handlePaymentReturn();
   }
-
   init();
 })();

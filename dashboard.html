@@ -20,37 +20,32 @@
   </div>
 </nav>
 
-<!-- Admin-Login (PIN im lokalen Modus, E-Mail-Code im Backend-Modus) -->
-<div class="wrap" id="pinGate">
+<!-- Admin-Login -->
+<div class="wrap" id="loginGate">
   <div class="page-head">
     <div class="eyebrow">Adminbereich</div>
     <h1>Dashboard-<em>Zugang</em></h1>
-    <p id="gateIntro">Bitte gib die Admin-PIN ein, um das Ticketshop-Dashboard zu öffnen.</p>
+    <p>Melde dich mit deiner Admin-E-Mail-Adresse an. Du erhältst einen Anmelde-Link bzw. Verifizierungscode per E-Mail.</p>
   </div>
-  <div class="card" style="max-width:420px" id="pinForm">
-    <label for="pinInput">Admin-PIN</label>
-    <input type="password" id="pinInput" inputmode="numeric" maxlength="8" placeholder="••••">
-    <p class="hint">Standard-PIN: 2468 – bitte nach dem ersten Login unter „Einstellungen“ ändern.</p>
-    <div class="msg" id="pinMsg"></div>
-    <button class="btn btn-gold" id="btnPin" style="margin-top:16px">Anmelden</button>
-  </div>
-  <div class="card" style="max-width:420px;display:none" id="emailForm">
-    <div id="adminStep1">
+  <div class="card" style="max-width:460px">
+    <div id="gateStep1">
       <label for="adminEmail">Admin-E-Mail</label>
-      <input type="email" id="adminEmail" placeholder="deine@email.at" autocomplete="email">
-      <p class="hint">Du erhältst einen 6-stelligen Code per E-Mail. Zugang haben nur Adressen aus der Admin-Liste.</p>
-      <div class="msg" id="adminMsg1"></div>
-      <button class="btn btn-gold" id="btnAdminCode" style="margin-top:16px">Code senden</button>
+      <input type="email" id="adminEmail" placeholder="admin@core-management.at" autocomplete="email">
+      <div class="msg" id="gateMsg1"></div>
+      <button class="btn btn-gold" id="btnGateSend" style="margin-top:16px">Anmelde-E-Mail senden</button>
     </div>
-    <div id="adminStep2" style="display:none">
-      <label for="adminCode">Verifizierungscode</label>
+    <div id="gateStep2" style="display:none">
+      <div class="msg info show" id="gateSentInfo"></div>
+      <label for="adminCode">Verifizierungscode (aus der E-Mail)</label>
       <input type="text" id="adminCode" class="code-input" maxlength="6" inputmode="numeric" placeholder="••••••">
-      <div class="msg" id="adminMsg2"></div>
-      <div style="display:flex;gap:10px;margin-top:16px">
-        <button class="btn btn-gold" id="btnAdminVerify">Anmelden</button>
-        <button class="btn btn-ghost btn-sm" id="btnAdminBack">E-Mail ändern</button>
+      <div class="msg" id="gateMsg2"></div>
+      <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+        <button class="btn btn-gold" id="btnGateVerify">Bestätigen</button>
+        <button class="btn btn-ghost btn-sm" id="btnGateBack">E-Mail ändern</button>
       </div>
+      <p class="hint" style="margin-top:10px">Alternativ: einfach den Anmelde-Link in der E-Mail anklicken – du landest dann automatisch angemeldet hier im Dashboard.</p>
     </div>
+    <div class="msg" id="gateDenied"></div>
   </div>
 </div>
 
@@ -116,6 +111,7 @@
     <div class="table-scroll card" style="padding:10px">
       <table class="data" id="orderTable"></table>
     </div>
+    <p class="hint" style="margin-top:10px">Bezahlt-Status wird automatisch von Stripe gesetzt (Webhook). Rückerstattungen bitte direkt im Stripe-Dashboard durchführen und die Bestellung hier stornieren.</p>
   </div>
 
   <!-- Check-in -->
@@ -136,72 +132,29 @@
 
   <!-- Einstellungen -->
   <div class="tabpane" id="tabSettings">
-    <div class="card" id="cardBackend" style="display:none">
-      <h2>Backend aktiv (Supabase + Stripe)</h2>
-      <p class="sub">Der Shop läuft mit zentraler Datenbank: Bestellungen aller Kund:innen erscheinen hier auf jedem Gerät.
-        Verifizierungscodes werden von Supabase per E-Mail versendet, Zahlungen laufen über Stripe-Checkout und werden
-        <b>fälschungssicher per Webhook</b> bestätigt – Tickets werden erst nach verifizierter Zahlung freigeschaltet.</p>
-      <p class="hint" style="margin-top:10px">
-        Admins verwalten: im Supabase-Dashboard → SQL Editor, z.&nbsp;B.
-        <code>insert into admins (email) values ('name@email.at');</code> ·
-        Stripe-Schlüssel &amp; Webhook: siehe <b>BACKEND-ANLEITUNG.md</b> im Repository.
-      </p>
-    </div>
-
-    <div class="card" id="cardEmailJS">
-      <h2>E-Mail-Versand (EmailJS)</h2>
-      <p class="sub">Für echten Versand der Verifizierungscodes ein kostenloses Konto auf <b>emailjs.com</b> anlegen,
-        einen E-Mail-Service verbinden und ein Template mit den Variablen <code>{{to_email}}</code>, <code>{{passcode}}</code> und <code>{{message}}</code> erstellen.
-        Ohne Konfiguration läuft der Shop im Demo-Modus (Code wird im Browser angezeigt).</p>
-      <div class="field-row">
-        <div><label>Service-ID</label><input type="text" id="ejService" placeholder="service_xxxxxxx"></div>
-        <div><label>Template-ID</label><input type="text" id="ejTemplate" placeholder="template_xxxxxxx"></div>
-        <div><label>Public Key</label><input type="text" id="ejKey" placeholder="XXXXXXXXXXXXXXX"></div>
+    <div class="card">
+      <h2>Admins verwalten</h2>
+      <p class="sub">Admins können das Dashboard nutzen (Events, Bestellungen, Check-in). Anmeldung per E-Mail-Verifizierung.</p>
+      <div id="adminList" style="margin:12px 0"></div>
+      <div class="field-row" style="align-items:flex-end">
+        <div><label>Neue Admin-E-Mail</label><input type="email" id="newAdminEmail" placeholder="name@example.at"></div>
+        <div style="flex:0 0 auto"><button class="btn btn-gold btn-sm" id="btnAddAdmin">Hinzufügen</button></div>
       </div>
-      <div class="msg" id="ejMsg"></div>
-      <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
-        <button class="btn btn-gold btn-sm" id="btnSaveEJ">Speichern</button>
-        <button class="btn btn-ghost btn-sm" id="btnTestEJ">Test-E-Mail senden</button>
-      </div>
-    </div>
-
-    <div class="card" id="cardStripeLinks">
-      <h2>Online-Zahlung (Stripe Payment Links)</h2>
-      <p class="sub">So müssen Käufer:innen <b>direkt online bezahlen</b>, bevor sie ihre Tickets erhalten:</p>
-      <ol class="sub" style="margin:10px 0 0 20px;line-height:1.9">
-        <li>Kostenloses Konto auf <b>stripe.com</b> erstellen (Gebühr nur pro Transaktion, ca. 1,5 % + 0,25 €).</li>
-        <li>Im Stripe-Dashboard unter <i>Produktkatalog</i> für jede Ticketkategorie ein Produkt mit dem passenden Preis anlegen.</li>
-        <li>Unter <i>Zahlungslinks</i> („Payment Links“) pro Produkt einen Link erstellen und <b>„Kunden können Menge anpassen“ aktivieren</b>.</li>
-        <li>Beim Zahlungslink unter <i>Nach der Zahlung</i> → „Kunden zu Ihrer Website weiterleiten“ diese Adresse eintragen:<br>
-          <code>https://core-management.at/tickets.html?paid=1</code></li>
-        <li>Den Link (https://buy.stripe.com/…) hier im Tab <i>Events &amp; Tickets</i> beim Bearbeiten der jeweiligen Kategorie in das Feld <b>„Stripe Payment-Link“</b> einfügen.</li>
-      </ol>
-      <p class="hint" style="margin-top:12px">Kategorien mit Payment-Link führen im Checkout direkt zur Stripe-Bezahlseite; die Tickets werden erst nach der Rückkehr von der erfolgreichen Zahlung freigeschaltet. Kategorien ohne Link laufen weiter über den manuellen Weg (Überweisung/Abendkassa + „Als bezahlt markieren“). Empfehlung: Online-Zahlungen regelmäßig im Stripe-Dashboard gegenprüfen – die Freischaltung erfolgt im Browser des Kunden und ersetzt keine Buchhaltungskontrolle.</p>
+      <div class="msg" id="adminMsg"></div>
     </div>
 
     <div class="card">
-      <h2>Checkout-Hinweis</h2>
-      <p class="sub">Dieser Text wird Käufer:innen beim Abschluss der Bestellung angezeigt (z.&nbsp;B. Zahlungsinformationen).</p>
-      <textarea id="checkoutNote" rows="3"></textarea>
-      <button class="btn btn-gold btn-sm" id="btnSaveNote" style="margin-top:14px">Speichern</button>
-    </div>
-
-    <div class="card" id="cardPin">
-      <h2>Admin-PIN ändern</h2>
-      <div class="field-row">
-        <div><label>Neue PIN (4–8 Ziffern)</label><input type="password" id="newPin" maxlength="8"></div>
-        <div><label>PIN wiederholen</label><input type="password" id="newPin2" maxlength="8"></div>
-      </div>
-      <div class="msg" id="pinChangeMsg"></div>
-      <button class="btn btn-gold btn-sm" id="btnSavePin" style="margin-top:14px">PIN speichern</button>
-      <p class="hint">Hinweis: Der Shop läuft komplett im Browser (statisches Hosting). Die PIN schützt vor unbefugtem Zugriff am selben Gerät,
-        ist aber kein Ersatz für einen echten Server mit Benutzerkonten.</p>
-    </div>
-
-    <div class="card" id="cardData">
-      <h2>Daten</h2>
-      <p class="sub">Alle Shop-Daten (Events, Bestellungen, Nutzer) dieses Browsers zurücksetzen.</p>
-      <button class="btn btn-danger btn-sm" id="btnReset" style="margin-top:8px">Alle Shop-Daten löschen</button>
+      <h2>System</h2>
+      <p class="sub">
+        <b>Zahlungen:</b> Stripe Checkout – Bestellungen werden erst nach serverseitig bestätigter Zahlung (Webhook) freigeschaltet.
+        Verwaltung, Auszahlungen und Rückerstattungen im <b>Stripe-Dashboard</b> (dashboard.stripe.com).<br><br>
+        <b>Daten &amp; Login:</b> Supabase (Projekt „Ticketsystem“) – zentrale Datenbank für Events, Bestellungen und Tickets.
+        Anmelde-E-Mails werden von Supabase versendet.<br><br>
+        <b>Wichtig – E-Mail-Limit:</b> Ohne eigenen SMTP-Server versendet Supabase nur wenige Anmelde-E-Mails pro Stunde.
+        Für den echten Verkaufsstart im Supabase-Dashboard unter <i>Authentication → Emails → SMTP Settings</i> einen eigenen
+        Absender hinterlegen (z. B. Resend oder Brevo, kostenlos) – dann entfällt das Limit und die E-Mail kann einen
+        6-stelligen Code enthalten (Vorlage mit <code>{{ .Token }}</code>).
+      </p>
     </div>
   </div>
 </div>
@@ -241,10 +194,9 @@
   <div><a href="tickets.html">Zum Shop</a> · <a href="index.html">Hauptseite</a></div>
 </footer>
 
+<script src="assets/supabase.js"></script>
 <script src="assets/qrcode.js"></script>
 <script src="assets/ticket-pdf.js"></script>
-<script src="assets/config.js"></script>
-<script src="assets/supabase.js"></script>
 <script src="assets/store.js"></script>
 <script src="assets/dashboard.js"></script>
 </body>
