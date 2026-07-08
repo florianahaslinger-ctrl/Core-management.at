@@ -331,42 +331,78 @@
 
   /* ---- Kamera-QR-Scanner ---- */
   let scanStream = null;
-  let scanRAF = null;
+  let scanTimer = null;
+  let scanStart0 = 0;
   let lastScan = { code: '', at: 0 };
+  const scanCanvas = document.createElement('canvas');
+  const scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true });
+
+  // Einen Frame/Bild dekodieren (auf max. Breite skaliert), attemptBoth
+  function decode(source, sw, sh) {
+    if (!window.jsQR) return null;
+    const maxW = 1000;
+    const scale = sw > maxW ? maxW / sw : 1;
+    const w = Math.round(sw * scale), h = Math.round(sh * scale);
+    scanCanvas.width = w; scanCanvas.height = h;
+    scanCtx.drawImage(source, 0, 0, w, h);
+    const img = scanCtx.getImageData(0, 0, w, h);
+    const hit = jsQR(img.data, w, h, { inversionAttempts: 'attemptBoth' });
+    return hit && hit.data ? hit.data : null;
+  }
 
   async function scanStart() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      msg($('scanMsg'), 'Dieser Browser unterstützt keinen Kamerazugriff (HTTPS erforderlich).', 'error');
+      msg($('scanMsg'), 'Dieser Browser unterstützt keinen Live-Kamerazugriff (HTTPS erforderlich). Nutze „Foto scannen“.', 'error');
+      return;
+    }
+    if (!window.jsQR) {
+      msg($('scanMsg'), 'Scanner-Bibliothek nicht geladen – bitte Seite neu laden.', 'error');
       return;
     }
     try {
       msg($('scanMsg'), 'Kamera wird gestartet …', 'info');
-      scanStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false
-      });
+      try {
+        scanStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false
+        });
+      } catch (_) {
+        scanStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      }
+      // Dauer-Autofokus versuchen (falls die Kamera es unterstützt)
+      const track = scanStream.getVideoTracks()[0];
+      try { await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch (_) {}
+
       const video = $('scanVideo');
       video.srcObject = scanStream;
       await video.play();
       $('scannerBox').style.display = '';
       $('btnScanStart').style.display = 'none';
       $('btnScanStop').style.display = '';
-      msg($('scanMsg'), 'Scanner aktiv – QR-Code vor die Kamera halten.', 'info');
-      const cv = document.createElement('canvas');
-      const ctx = cv.getContext('2d', { willReadFrequently: true });
-      const tick = async () => {
+      msg($('scanMsg'), 'Scanner aktiv – QR-Code formatfüllend und ruhig ins Bild halten.', 'info');
+      scanStart0 = Date.now();
+
+      const loop = async () => {
         if (!scanStream) return;
         if (video.readyState >= 2 && video.videoWidth) {
-          cv.width = video.videoWidth; cv.height = video.videoHeight;
-          ctx.drawImage(video, 0, 0);
-          const img = ctx.getImageData(0, 0, cv.width, cv.height);
-          const hit = window.jsQR && jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
-          if (hit && hit.data) await scanHit(hit.data);
+          let code = null;
+          try { code = decode(video, video.videoWidth, video.videoHeight); } catch (_) {}
+          const frame = $('scanFrame');
+          if (code) {
+            if (frame) frame.style.borderColor = 'var(--ok)';
+            await scanHit(code);
+          } else {
+            if (frame) frame.style.borderColor = 'var(--gold)';
+            // Hinweis, wenn nach 8 s nichts erkannt wurde
+            if (Date.now() - scanStart0 > 8000 && !/eingecheckt|bereits|nicht/i.test($('scanMsg').textContent)) {
+              msg($('scanMsg'), 'Noch nichts erkannt: näher heran/scharfstellen, mehr Licht – oder „Foto scannen“ nutzen.', 'info');
+            }
+          }
         }
-        scanRAF = requestAnimationFrame(tick);
+        scanTimer = setTimeout(() => requestAnimationFrame(loop), 120);
       };
-      scanRAF = requestAnimationFrame(tick);
+      requestAnimationFrame(loop);
     } catch (e) {
-      msg($('scanMsg'), 'Kamera nicht verfügbar: ' + e.message, 'error');
+      msg($('scanMsg'), 'Kamera nicht verfügbar: ' + e.message + ' – nutze „Foto scannen“.', 'error');
       scanStop();
     }
   }
@@ -389,13 +425,30 @@
   }
 
   function scanStop() {
-    if (scanRAF) cancelAnimationFrame(scanRAF);
-    scanRAF = null;
+    if (scanTimer) clearTimeout(scanTimer);
+    scanTimer = null;
     if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
     $('scannerBox').style.display = 'none';
     $('btnScanStart').style.display = '';
     $('btnScanStop').style.display = 'none';
-    msg($('scanMsg'), '');
+  }
+
+  // Foto-Alternative: aufgenommenes/gewähltes Bild dekodieren
+  async function scanPhoto(file) {
+    if (!file) return;
+    if (!window.jsQR) { msg($('scanMsg'), 'Scanner-Bibliothek nicht geladen – bitte Seite neu laden.', 'error'); return; }
+    msg($('scanMsg'), 'Foto wird ausgewertet …', 'info');
+    try {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
+      const code = decode(img, img.naturalWidth, img.naturalHeight);
+      URL.revokeObjectURL(url);
+      if (!code) { msg($('scanMsg'), 'Kein QR-Code im Foto erkannt – bitte näher/schärfer fotografieren.', 'error'); return; }
+      await scanHit(code);
+    } catch (e) {
+      msg($('scanMsg'), 'Foto konnte nicht ausgewertet werden: ' + e.message, 'error');
+    }
   }
 
   /* ================= Admins ================= */
@@ -449,6 +502,8 @@
   $('checkinCode').addEventListener('keydown', e => { if (e.key === 'Enter') doCheckin(); });
   $('btnScanStart').addEventListener('click', scanStart);
   $('btnScanStop').addEventListener('click', scanStop);
+  $('btnScanPhoto').addEventListener('click', () => $('scanPhoto').click());
+  $('scanPhoto').addEventListener('change', e => { scanPhoto(e.target.files[0]); e.target.value = ''; });
   $('btnNewEvent').addEventListener('click', () => openEventEditor(null));
   $('btnAddCat').addEventListener('click', () => {
     $('catEditor').insertAdjacentHTML('beforeend', catRowHTML(null));

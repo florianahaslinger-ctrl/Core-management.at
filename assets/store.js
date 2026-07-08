@@ -75,7 +75,7 @@
 
     async verifyCode(email, code) {
       const { data, error } = await sb.auth.verifyOtp({
-        email: normEmail(email), token: String(code).trim(), type: 'email'
+        email: normEmail(email), token: String(code).replace(/\D/g, ''), type: 'email'
       });
       if (error) throw new Error(niceAuthError(error));
       session = data.session;
