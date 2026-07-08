@@ -37,7 +37,7 @@
     <div id="gateStep2" style="display:none">
       <div class="msg info show" id="gateSentInfo"></div>
       <label for="adminCode">Verifizierungscode (aus der E-Mail)</label>
-      <input type="text" id="adminCode" class="code-input" maxlength="6" inputmode="numeric" placeholder="••••••">
+      <input type="text" id="adminCode" class="code-input" maxlength="8" inputmode="numeric" autocomplete="one-time-code" placeholder="••••••">
       <div class="msg" id="gateMsg2"></div>
       <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
         <button class="btn btn-gold" id="btnGateVerify">Bestätigen</button>
@@ -121,15 +121,17 @@
         <h2>QR-Scanner</h2>
         <p class="sub">Kamera starten und den QR-Code des Tickets vor die Linse halten – der Check-in passiert automatisch.</p>
         <div id="scannerBox" style="position:relative;margin-top:14px;display:none">
-          <video id="scanVideo" playsinline muted style="width:100%;border-radius:4px;border:1px solid var(--line);background:#000"></video>
-          <div id="scanFrame" style="position:absolute;inset:12%;border:2px solid var(--gold);border-radius:8px;pointer-events:none;opacity:.7"></div>
+          <video id="scanVideo" playsinline muted autoplay style="width:100%;border-radius:4px;border:1px solid var(--line);background:#000;display:block"></video>
+          <div id="scanFrame" style="position:absolute;inset:12%;border:2px solid var(--gold);border-radius:8px;pointer-events:none;opacity:.7;transition:border-color .15s"></div>
         </div>
         <div class="msg" id="scanMsg"></div>
         <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
           <button class="btn btn-gold" id="btnScanStart">Kamera-Scan starten</button>
           <button class="btn btn-ghost" id="btnScanStop" style="display:none">Scanner stoppen</button>
+          <button class="btn btn-ghost" id="btnScanPhoto">Foto scannen</button>
+          <input type="file" id="scanPhoto" accept="image/*" capture="environment" style="display:none">
         </div>
-        <p class="hint" style="margin-top:10px">Funktioniert im Browser am Handy oder Laptop (Kamerafreigabe nötig, HTTPS). Alternativ am Handy: QR-Code mit der normalen Kamera scannen – die Ticketprüfung öffnet sich mit „Jetzt einchecken“-Knopf, solange du hier im Dashboard angemeldet bist.</p>
+        <p class="hint" style="margin-top:10px">Erkennt der Live-Scanner nichts (z.&nbsp;B. unscharfe Laptop-Webcam), nutze <b>„Foto scannen“</b> – ein aufgenommenes/gewähltes Foto wird zuverlässig ausgewertet. Am Handy funktioniert auch die normale Kamera: Der QR-Code öffnet die Ticketprüfung mit „Jetzt einchecken“, solange du hier angemeldet bist.</p>
       </div>
       <div class="card" style="margin:0">
         <h2>Manuelle Eingabe</h2>
