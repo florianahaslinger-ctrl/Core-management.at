@@ -30,15 +30,23 @@
   }
 
   /* ---------- Navigation / Auth-Status ---------- */
-  function renderNav() {
+  async function renderNav() {
     const user = S.currentUser();
     const a = $('navAuth');
+    const dash = $('navDash');
     if (user) {
       a.textContent = user + ' · Abmelden';
       a.onclick = async e => { e.preventDefault(); await S.logout(); renderNav(); renderMyTickets(); };
     } else {
       a.textContent = 'Anmelden';
       a.onclick = e => { e.preventDefault(); openLogin(); };
+    }
+    // Dashboard-Link nur für Admins zeigen – Kund:innen sehen ihn nie
+    if (dash) {
+      dash.style.display = 'none';
+      if (user) {
+        try { if (await S.isAdmin()) dash.style.display = ''; } catch (_) {}
+      }
     }
   }
 
