@@ -43,15 +43,18 @@ verwaltbar im Dashboard unter *Einstellungen → Admins verwalten*. Erster Admin
 
 ## Wichtig für den echten Betrieb
 
-1. **E-Mail-Versand (dringend empfohlen):** Ohne eigenen SMTP-Server verschickt Supabase nur **2 Anmelde-E-Mails pro Stunde** –
-   für den Verkaufsstart zwingend ändern: Supabase-Dashboard → *Authentication → Emails → SMTP Settings* →
-   kostenlosen Anbieter hinterlegen (z. B. Resend oder Brevo). Danach kann dort auch die E-Mail-Vorlage angepasst werden –
-   mit `{{ .Token }}` steht der 6-stellige Code direkt in der E-Mail.
+1. **E-Mail-Versand (eingerichtet ✓):** Anmelde-Codes werden über **Brevo** verschickt – nicht mehr über den
+   begrenzten Supabase-Standardversand. Umgesetzt als *Send Email Hook*: Supabase ruft für jede Auth-E-Mail die
+   Edge Function `send-auth-email` auf, die die Mail über die Brevo-API (HTTPS) mit deutscher Vorlage und
+   6-stelligem Code verschickt. Absender: `office@core-management.at` (in Brevo verifiziert). Das 2-Mails-pro-Stunde-Limit
+   entfällt damit; das Auth-Rate-Limit steht auf 100/Stunde. Brevos Gratis-Kontingent sind 300 Mails/Tag – bei größeren
+   Verkaufswellen ggf. Brevo-Tarif prüfen.
 2. **Stripe:** Auszahlungen, Rückerstattungen und Belege im Stripe-Dashboard (dashboard.stripe.com).
    Bei jeder Zahlung steht die Bestellnummer als *client_reference_id*.
-3. **Schlüssel geheim halten:** Der `sk_live_…`-Schlüssel und das Supabase-Access-Token gehören nirgendwo in den Code
-   oder in Chats. Nach Einrichtung/Weitergabe: in Stripe rotieren (Entwickler → API-Schlüssel) und den neuen Wert als
-   Secret `STRIPE_SECRET_KEY` in Supabase setzen (*Edge Functions → Secrets*).
+3. **Schlüssel geheim halten:** Der `sk_live_…`-Schlüssel (Stripe), der `xkeysib-…`-Schlüssel (Brevo) und das
+   Supabase-Access-Token gehören nirgendwo in den Code oder in Chats. Alle liegen als Secrets in Supabase
+   (*Edge Functions → Secrets*: `STRIPE_SECRET_KEY`, `BREVO_API_KEY`). Nach Weitergabe rotieren und dort neu setzen;
+   das Brevo-Konto-Passwort ggf. ändern.
 4. Der im Frontend sichtbare Supabase-„anon“-Schlüssel ist **öffentlich vorgesehen** und durch Row Level Security abgesichert.
 
 ## Technische Komponenten
@@ -62,5 +65,6 @@ verwaltbar im Dashboard unter *Einstellungen → Admins verwalten*. Erster Admin
 - `assets/qrcode.js` – QR-Code-Generator (MIT-Lizenz, lokal)
 - `assets/ticket-pdf.js` – PDF-Erzeugung ohne externe Bibliotheken
 - Supabase Edge Functions: `create-checkout` (legt Bestellung + Stripe-Session an, prüft Kontingente serverseitig),
-  `stripe-webhook` (prüft die Stripe-Signatur, erzeugt Tickets nach bestätigter Zahlung)
+  `stripe-webhook` (prüft die Stripe-Signatur, erzeugt Tickets nach bestätigter Zahlung),
+  `send-auth-email` (Send Email Hook: verschickt Anmelde-Codes über Brevo, prüft die Standard-Webhooks-Signatur)
 - Stripe-Webhook: `checkout.session.completed` → `https://xfdiuhmgkdujbjhdhvcw.supabase.co/functions/v1/stripe-webhook`
