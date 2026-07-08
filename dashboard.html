@@ -59,6 +59,7 @@
   <div class="dash-tabs" id="tabs">
     <button data-tab="tabOverview" class="active">Übersicht</button>
     <button data-tab="tabEvents">Events &amp; Tickets</button>
+    <button data-tab="tabIssue">Tickets ausstellen</button>
     <button data-tab="tabOrders">Bestellungen</button>
     <button data-tab="tabCheckin">Check-in</button>
     <button data-tab="tabSettings">Einstellungen</button>
@@ -93,6 +94,46 @@
       <button class="btn btn-gold btn-sm" id="btnNewEvent">+ Neues Event</button>
     </div>
     <div id="adminEvents"></div>
+  </div>
+
+  <!-- Tickets ausstellen -->
+  <div class="tabpane" id="tabIssue">
+    <div class="card" style="max-width:640px">
+      <h2>Tickets ausstellen &amp; versenden</h2>
+      <p class="sub">Erzeuge Tickets ohne Online-Zahlung und schicke sie direkt per E-Mail – z.&nbsp;B. Gast-/Freikarten oder eine an der Kassa bar bezahlte Bestellung.</p>
+      <div class="field-row">
+        <div style="flex:2 1 240px">
+          <label for="issueCat">Event &amp; Ticketkategorie</label>
+          <select id="issueCat"></select>
+        </div>
+        <div>
+          <label for="issueQty">Anzahl</label>
+          <input type="number" id="issueQty" min="1" max="50" value="1">
+        </div>
+      </div>
+      <div class="field-row">
+        <div style="flex:2 1 240px">
+          <label for="issueEmail">Empfänger-E-Mail</label>
+          <input type="email" id="issueEmail" placeholder="gast@example.at" autocomplete="off">
+        </div>
+        <div>
+          <label for="issueMode">Art</label>
+          <select id="issueMode">
+            <option value="gast">Gastticket (gratis, kein Umsatz)</option>
+            <option value="bar">Barzahlung (zählt als Umsatz)</option>
+          </select>
+        </div>
+      </div>
+      <label for="issueNote">Nachricht an Empfänger:in (optional)</label>
+      <textarea id="issueNote" rows="2" placeholder="z. B. Viel Spaß beim Ball! – dein CORE-Team"></textarea>
+      <div class="msg" id="issueMsg"></div>
+      <button class="btn btn-gold" id="btnIssue" style="margin-top:16px">Tickets erstellen &amp; senden</button>
+      <p class="hint" style="margin-top:12px">Die Empfänger:innen erhalten eine E-Mail mit Ticketcode und QR-Link. Sie können sich unter <b>tickets.html</b> mit ihrer E-Mail anmelden und die Tickets als PDF laden. Ausgestellte Tickets erscheinen unter „Bestellungen“ (Zahlart <i>gast</i> bzw. <i>bar</i>) und sind sofort einlassfähig.</p>
+    </div>
+    <div class="card" id="issueResult" style="display:none;max-width:640px">
+      <h2>Ausgestellte Tickets</h2>
+      <div id="issueCodes"></div>
+    </div>
   </div>
 
   <!-- Bestellungen -->

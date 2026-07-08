@@ -269,6 +269,47 @@
     });
   }
 
+  /* ================= Tickets ausstellen ================= */
+  function renderIssueOptions() {
+    const sel = $('issueCat');
+    if (!sel) return;
+    const prev = sel.value;
+    const opts = [];
+    events.forEach(ev => ev.categories.forEach(cat => {
+      opts.push('<option value="' + esc(cat.id) + '">' + esc(ev.name) + ' – ' + esc(cat.name) +
+        ' (' + S.fmtEUR.format(cat.price) + ', ' + Math.max(0, cat.quota - cat.sold) + ' frei)</option>');
+    }));
+    sel.innerHTML = opts.length ? opts.join('') : '<option value="">Erst ein Event anlegen …</option>';
+    if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
+  }
+
+  async function doIssue() {
+    const categoryId = $('issueCat').value;
+    const qty = parseInt($('issueQty').value, 10) || 0;
+    const email = $('issueEmail').value.trim();
+    const mode = $('issueMode').value;
+    const note = $('issueNote').value.trim();
+    if (!categoryId) { msg($('issueMsg'), 'Bitte eine Ticketkategorie wählen.', 'error'); return; }
+    if (!email) { msg($('issueMsg'), 'Bitte eine Empfänger-E-Mail eingeben.', 'error'); return; }
+    try {
+      $('btnIssue').disabled = true;
+      msg($('issueMsg'), 'Tickets werden erstellt und gesendet …', 'info');
+      const res = await S.issueTickets({ categoryId, qty, email, mode, note });
+      msg($('issueMsg'), '✓ ' + res.codes.length + ' Ticket(s) für ' + email +
+        (res.emailed ? ' erstellt und per E-Mail gesendet.' : ' erstellt – E-Mail-Versand fehlgeschlagen, bitte Codes manuell weitergeben.'), res.emailed ? 'ok' : 'error');
+      $('issueResult').style.display = '';
+      $('issueCodes').innerHTML = '<p class="sub">Bestellung ' + esc(res.order_id) + ' · Empfänger ' + esc(email) + '</p>' +
+        res.codes.map(c => '<div class="ticket"><div class="tinfo"><div class="tcode">' + esc(c) + '</div>' +
+          '<div class="tmeta">core-management.at/ticket.html?c=' + esc(c) + '</div></div></div>').join('');
+      $('issueNote').value = '';
+      await renderAll();
+    } catch (e) {
+      msg($('issueMsg'), e.message, 'error');
+    } finally {
+      $('btnIssue').disabled = false;
+    }
+  }
+
   /* ================= Bestellungen ================= */
   function renderOrders() {
     const q = ($('orderSearch').value || '').trim().toLowerCase();
@@ -480,6 +521,7 @@
     chartRevenue();
     renderQuota();
     renderAdminEvents();
+    renderIssueOptions();
     renderOrders();
     renderCheckins();
     renderAdmins();
@@ -500,6 +542,7 @@
   $('orderFilter').addEventListener('change', renderOrders);
   $('btnCheckin').addEventListener('click', doCheckin);
   $('checkinCode').addEventListener('keydown', e => { if (e.key === 'Enter') doCheckin(); });
+  $('btnIssue').addEventListener('click', doIssue);
   $('btnScanStart').addEventListener('click', scanStart);
   $('btnScanStop').addEventListener('click', scanStop);
   $('btnScanPhoto').addEventListener('click', () => $('scanPhoto').click());

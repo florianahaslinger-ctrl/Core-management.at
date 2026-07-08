@@ -171,6 +171,19 @@
       if (error) throw new Error(error.message);
     },
 
+    // Admin: Tickets ausstellen und per E-Mail versenden
+    async issueTickets({ categoryId, qty, email, mode, note }) {
+      const { data, error } = await sb.functions.invoke('issue-tickets', {
+        body: { category_id: categoryId, qty, email, mode, note }
+      });
+      if (error) {
+        let msg = 'Tickets konnten nicht ausgestellt werden.';
+        try { const b = await error.context.json(); if (b && b.error) msg = b.error; } catch (_) {}
+        throw new Error(msg);
+      }
+      return data; // { order_id, codes, total, emailed }
+    },
+
     // Ticketcode aus beliebigem Scan-/Eingabetext ziehen (auch aus QR-URLs)
     extractCode(text) {
       const m = String(text || '').toUpperCase().match(/CM-[A-Z0-9]{4}-[A-Z0-9]{4}/);
