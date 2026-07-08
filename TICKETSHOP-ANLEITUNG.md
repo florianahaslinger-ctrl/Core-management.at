@@ -34,7 +34,12 @@ verwaltbar im Dashboard unter *Einstellungen → Admins verwalten*. Erster Admin
 - **Übersicht:** Umsatz (nur bezahlte Bestellungen), verkaufte Tickets, Check-in-Quote; Diagramme; Auslastung je Kategorie.
 - **Events & Tickets:** vollständig modular – Events und Kategorien anlegen, Preise/Kontingente ändern, aktivieren/deaktivieren, löschen.
 - **Bestellungen:** suchen/filtern, CSV-Export, Tickets-PDF, stornieren (Kontingent wird frei; Rückerstattung im Stripe-Dashboard).
-- **Check-in:** Ticketcode scannen/eingeben → einmalige Entwertung; unbezahlte, stornierte oder bereits entwertete Tickets werden abgewiesen.
+- **Check-in:** drei Wege, alle gleichwertig:
+  1. **QR-Scanner im Dashboard** (Tab *Check-in* → „Kamera-Scan starten“): Handy/Laptop-Kamera scannt die Tickets, der Check-in passiert automatisch (mit Vibration als Rückmeldung am Handy).
+  2. **Handy-Kamera direkt:** Der QR-Code auf jedem Ticket öffnet `ticket.html` mit der Gültigkeitsprüfung (Gültig / bereits eingecheckt / nicht bezahlt / storniert). Ist man im selben Browser als Admin angemeldet, erscheint dort ein „Jetzt einchecken“-Knopf.
+  3. **Manuelle Eingabe** des Ticketcodes (CM-XXXX-XXXX).
+
+  Unbezahlte, stornierte oder bereits entwertete Tickets werden immer abgewiesen; jede Entwertung ist einmalig.
 
 ## Wichtig für den echten Betrieb
 

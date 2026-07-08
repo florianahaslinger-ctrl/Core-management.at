@@ -329,6 +329,75 @@
     $('checkinCode').focus();
   }
 
+  /* ---- Kamera-QR-Scanner ---- */
+  let scanStream = null;
+  let scanRAF = null;
+  let lastScan = { code: '', at: 0 };
+
+  async function scanStart() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      msg($('scanMsg'), 'Dieser Browser unterstützt keinen Kamerazugriff (HTTPS erforderlich).', 'error');
+      return;
+    }
+    try {
+      msg($('scanMsg'), 'Kamera wird gestartet …', 'info');
+      scanStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false
+      });
+      const video = $('scanVideo');
+      video.srcObject = scanStream;
+      await video.play();
+      $('scannerBox').style.display = '';
+      $('btnScanStart').style.display = 'none';
+      $('btnScanStop').style.display = '';
+      msg($('scanMsg'), 'Scanner aktiv – QR-Code vor die Kamera halten.', 'info');
+      const cv = document.createElement('canvas');
+      const ctx = cv.getContext('2d', { willReadFrequently: true });
+      const tick = async () => {
+        if (!scanStream) return;
+        if (video.readyState >= 2 && video.videoWidth) {
+          cv.width = video.videoWidth; cv.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0);
+          const img = ctx.getImageData(0, 0, cv.width, cv.height);
+          const hit = window.jsQR && jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+          if (hit && hit.data) await scanHit(hit.data);
+        }
+        scanRAF = requestAnimationFrame(tick);
+      };
+      scanRAF = requestAnimationFrame(tick);
+    } catch (e) {
+      msg($('scanMsg'), 'Kamera nicht verfügbar: ' + e.message, 'error');
+      scanStop();
+    }
+  }
+
+  async function scanHit(text) {
+    const code = S.extractCode(text);
+    if (!/^CM-/.test(code)) return; // fremder QR-Code – ignorieren
+    const now = Date.now();
+    if (code === lastScan.code && now - lastScan.at < 4000) return; // Entprellen
+    lastScan = { code, at: now };
+    try {
+      const res = await S.checkIn(code);
+      msg($('scanMsg'), '✓ Eingecheckt: ' + res.code + ' – ' + res.category + ' (' + res.email + ')', 'ok');
+      if (navigator.vibrate) navigator.vibrate(120);
+      renderAll();
+    } catch (e) {
+      msg($('scanMsg'), code + ': ' + e.message, 'error');
+      if (navigator.vibrate) navigator.vibrate([80, 60, 80]);
+    }
+  }
+
+  function scanStop() {
+    if (scanRAF) cancelAnimationFrame(scanRAF);
+    scanRAF = null;
+    if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+    $('scannerBox').style.display = 'none';
+    $('btnScanStart').style.display = '';
+    $('btnScanStop').style.display = 'none';
+    msg($('scanMsg'), '');
+  }
+
   /* ================= Admins ================= */
   async function renderAdmins() {
     try {
@@ -378,6 +447,8 @@
   $('orderFilter').addEventListener('change', renderOrders);
   $('btnCheckin').addEventListener('click', doCheckin);
   $('checkinCode').addEventListener('keydown', e => { if (e.key === 'Enter') doCheckin(); });
+  $('btnScanStart').addEventListener('click', scanStart);
+  $('btnScanStop').addEventListener('click', scanStop);
   $('btnNewEvent').addEventListener('click', () => openEventEditor(null));
   $('btnAddCat').addEventListener('click', () => {
     $('catEditor').insertAdjacentHTML('beforeend', catRowHTML(null));

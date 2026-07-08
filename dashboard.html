@@ -116,13 +116,29 @@
 
   <!-- Check-in -->
   <div class="tabpane" id="tabCheckin">
-    <div class="card" style="max-width:560px">
-      <h2>Ticket-Check-in</h2>
-      <p class="sub">Ticketcode eingeben oder scannen (z.&nbsp;B. CM-XXXX-XXXX) und bestätigen.</p>
-      <label for="checkinCode">Ticketcode</label>
-      <input type="text" id="checkinCode" placeholder="CM-XXXX-XXXX" autocomplete="off" style="text-transform:uppercase">
-      <div class="msg" id="checkinMsg"></div>
-      <button class="btn btn-gold" id="btnCheckin" style="margin-top:14px">Einchecken</button>
+    <div class="charts-row">
+      <div class="card" style="margin:0">
+        <h2>QR-Scanner</h2>
+        <p class="sub">Kamera starten und den QR-Code des Tickets vor die Linse halten – der Check-in passiert automatisch.</p>
+        <div id="scannerBox" style="position:relative;margin-top:14px;display:none">
+          <video id="scanVideo" playsinline muted style="width:100%;border-radius:4px;border:1px solid var(--line);background:#000"></video>
+          <div id="scanFrame" style="position:absolute;inset:12%;border:2px solid var(--gold);border-radius:8px;pointer-events:none;opacity:.7"></div>
+        </div>
+        <div class="msg" id="scanMsg"></div>
+        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+          <button class="btn btn-gold" id="btnScanStart">Kamera-Scan starten</button>
+          <button class="btn btn-ghost" id="btnScanStop" style="display:none">Scanner stoppen</button>
+        </div>
+        <p class="hint" style="margin-top:10px">Funktioniert im Browser am Handy oder Laptop (Kamerafreigabe nötig, HTTPS). Alternativ am Handy: QR-Code mit der normalen Kamera scannen – die Ticketprüfung öffnet sich mit „Jetzt einchecken“-Knopf, solange du hier im Dashboard angemeldet bist.</p>
+      </div>
+      <div class="card" style="margin:0">
+        <h2>Manuelle Eingabe</h2>
+        <p class="sub">Ticketcode eintippen (z.&nbsp;B. CM-XXXX-XXXX) und bestätigen.</p>
+        <label for="checkinCode">Ticketcode</label>
+        <input type="text" id="checkinCode" placeholder="CM-XXXX-XXXX" autocomplete="off" style="text-transform:uppercase">
+        <div class="msg" id="checkinMsg"></div>
+        <button class="btn btn-gold" id="btnCheckin" style="margin-top:14px">Einchecken</button>
+      </div>
     </div>
     <div class="card" style="margin-top:22px">
       <h2>Letzte Check-ins</h2>
@@ -195,6 +211,7 @@
 </footer>
 
 <script src="assets/supabase.js"></script>
+<script src="assets/jsqr.js"></script>
 <script src="assets/qrcode.js"></script>
 <script src="assets/ticket-pdf.js"></script>
 <script src="assets/store.js"></script>
