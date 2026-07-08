@@ -171,10 +171,23 @@
       if (error) throw new Error(error.message);
     },
 
+    // Ticketcode aus beliebigem Scan-/Eingabetext ziehen (auch aus QR-URLs)
+    extractCode(text) {
+      const m = String(text || '').toUpperCase().match(/CM-[A-Z0-9]{4}-[A-Z0-9]{4}/);
+      return m ? m[0] : String(text || '').trim().toUpperCase();
+    },
+
     async checkIn(code) {
-      const { data, error } = await sb.rpc('check_in_ticket', { p_code: String(code || '').trim() });
+      const { data, error } = await sb.rpc('check_in_ticket', { p_code: this.extractCode(code) });
       if (error) throw new Error(error.message.replace(/^.*?: /, ''));
       return data; // { code, category, event, email }
+    },
+
+    // Öffentliche Statusabfrage (für die Ticket-Seite hinter dem QR-Code)
+    async ticketStatus(code) {
+      const { data, error } = await sb.rpc('ticket_status', { p_code: this.extractCode(code) });
+      if (error) throw new Error(error.message);
+      return data;
     },
 
     /* --- Event-/Kategorie-Verwaltung (Admin, modular) --- */

@@ -7,6 +7,13 @@
 (function (global) {
   'use strict';
 
+  /* QR-Codes verlinken auf die Ticket-Status-Seite: beim Scannen mit einer
+     normalen Handy-Kamera öffnet sich die Gültigkeitsprüfung, und der
+     Einlass-Scanner im Dashboard liest den Code aus derselben URL. */
+  function ticketUrl(code) {
+    return 'https://core-management.at/ticket.html?c=' + encodeURIComponent(code);
+  }
+
   /* --- QR-Code als Canvas rendern (gemeinsam mit Shop nutzbar) --- */
   function qrCanvas(text, sizePx) {
     const qr = qrcode(0, 'M');
@@ -143,8 +150,9 @@
     // Klassischer Ticketcode (altes System) – groß, links neben dem QR
     s += line(60, 480, 'F2', 10, GRAY, 'Ticketcode (manuelle Eingabe):');
     s += line(60, 448, 'F1', 26, '0 0 0', t.code);
-    s += line(60, 400, 'F2', 9, GRAY, 'Beim Einlass QR-Code scannen lassen oder den');
-    s += line(60, 387, 'F2', 9, GRAY, 'Ticketcode oben vorzeigen. Beide Codes sind gleichwertig.');
+    s += line(60, 400, 'F2', 9, GRAY, 'Beim Einlass QR-Code scannen lassen oder den Ticketcode');
+    s += line(60, 387, 'F2', 9, GRAY, 'oben vorzeigen. Der QR-Code öffnet die Gültigkeitsprüfung auf');
+    s += line(60, 374, 'F2', 9, GRAY, 'core-management.at/ticket.html – auch mit jeder Handy-Kamera.');
 
     // Trennlinie + Hinweise
     s += GOLD + ' RG 1.2 w\n60 300 m 535 300 l S\n';
@@ -181,7 +189,7 @@
 
     tickets.forEach((t, i) => {
       const imgObj = FIRST_DYNAMIC + i * 3;
-      const cv = qrCanvas(t.code, 400);
+      const cv = qrCanvas(ticketUrl(t.code), 400);
       const jpg = dataURLtoBytes(cv.toDataURL('image/jpeg', 0.92));
       objects.push([
         '<< /Type /XObject /Subtype /Image /Width ' + cv.width + ' /Height ' + cv.height +
@@ -216,5 +224,5 @@
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
   }
 
-  global.CMTicketPDF = { download, makePDF, qrCanvas };
+  global.CMTicketPDF = { download, makePDF, qrCanvas, ticketUrl };
 })(window);

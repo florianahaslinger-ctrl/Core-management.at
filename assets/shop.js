@@ -266,7 +266,7 @@
       if (el.dataset.done) return;
       el.dataset.done = '1';
       try {
-        const cv = window.CMTicketPDF.qrCanvas(el.dataset.code, 96);
+        const cv = window.CMTicketPDF.qrCanvas(window.CMTicketPDF.ticketUrl(el.dataset.code), 96);
         cv.style.width = cv.style.height = '100%';
         el.appendChild(cv);
       } catch (e) {
