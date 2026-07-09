@@ -98,6 +98,7 @@
       '<div class="status-title ' + cls + '">' + title + '</div>' +
       '<div class="status-code">' + esc(st.code) + '</div>' +
       '<div class="status-meta">' + esc(st.category) + ' – ' + esc(st.event) + '<br>' +
+      (st.seat ? '<b style="color:var(--gold-light)">' + esc(st.seat) + '</b><br>' : '') +
       fmtDate(st.event_date) + (st.event_location ? ' · ' + esc(st.event_location) : '') + '</div>' +
       '<p class="sub" style="margin-top:10px">' + note + '</p>' +
       '<div id="adminAction" style="margin-top:16px"></div>';

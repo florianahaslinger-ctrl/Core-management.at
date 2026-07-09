@@ -223,6 +223,27 @@ footer.shop-footer{border-top:1px solid var(--line);margin-top:70px;padding:30px
 footer.shop-footer a{color:var(--gray);transition:color .2s}
 footer.shop-footer a:hover{color:var(--gold)}
 
+/* ---------- Sitzplatz-Auswahl ---------- */
+.tseat{color:var(--gold-light);font-size:13px;margin-top:3px}
+.linklike{background:none;border:none;color:var(--gold);cursor:pointer;font-size:12px;text-decoration:underline;padding:0;font-family:inherit}
+.seat-legend{display:flex;gap:18px;margin:6px 0 14px;font-size:12px;color:var(--gray);flex-wrap:wrap}
+.seat-legend span{display:inline-flex;align-items:center;gap:6px}
+.seat-legend i.seat{width:16px;height:16px;pointer-events:none}
+.seat-map{max-height:52vh;overflow:auto;padding:4px;border:1px solid var(--line);border-radius:6px;background:#0c0c0b}
+.seat-row{padding:10px 4px;border-bottom:1px dashed rgba(201,168,76,.12)}
+.seat-row:last-child{border-bottom:none}
+.seat-row-label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gray);margin-bottom:8px}
+.seat-tables{display:flex;gap:14px;flex-wrap:wrap}
+.seat-table{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#111}
+.seat-table-label{font-size:10px;color:var(--muted);text-align:center;margin-bottom:6px;letter-spacing:.05em}
+.seat-dots{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.seat{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:#181713;color:var(--gray);
+  font-size:11px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.seat.free:hover{border-color:var(--gold);color:var(--gold-light)}
+.seat.sel{background:var(--gold-grad);color:#181206;border-color:var(--gold);font-weight:bold}
+.seat.taken{background:#0a0a0a;color:#3a3a3a;border-color:#222;cursor:not-allowed}
+.seat-count{font-size:14px;color:var(--gold-light)}
+
 @media(max-width:640px){
   .wrap{padding:40px 5vw}
   .shop-nav{flex-wrap:wrap;gap:10px 18px}

@@ -39,14 +39,15 @@
       tickets: (o.tickets || []).map(t => ({
         code: t.code, categoryId: t.category_id, categoryName: t.category_name,
         eventName: t.event_name, eventDate: t.event_date, eventLocation: t.event_location,
-        price: Number(t.price), checkedIn: t.checked_in, checkedInAt: t.checked_in_at
+        price: Number(t.price), checkedIn: t.checked_in, checkedInAt: t.checked_in_at,
+        seat: t.seats ? { row: t.seats.row_no, table: t.seats.table_no, seat: t.seats.seat_no } : null
       }))
     };
   }
 
   const ORDER_SELECT = 'id,email,status,total,paid_via,paid_at,created_at,' +
     'order_items(category_id,category_name,event_name,price,qty),' +
-    'tickets(code,category_id,category_name,event_name,event_date,event_location,price,checked_in,checked_in_at)';
+    'tickets(code,category_id,category_name,event_name,event_date,event_location,price,checked_in,checked_in_at,seats(row_no,table_no,seat_no))';
 
   const Store = {
     fmtEUR, validEmail, normEmail,
@@ -87,7 +88,7 @@
     /* --- Events & Verfügbarkeit --- */
     async getEvents(includeInactive) {
       let q = sb.from('events')
-        .select('id,name,date,location,description,active,categories(id,name,price,quota,max_per_order,description,active,sort)')
+        .select('id,name,date,location,description,active,categories(id,name,price,quota,max_per_order,description,active,sort,seating)')
         .order('date', { ascending: true });
       const { data, error } = await q;
       if (error) throw new Error(error.message);
@@ -104,14 +105,49 @@
             .map(c => ({
               id: c.id, name: c.name, price: Number(c.price), quota: c.quota,
               maxPerOrder: c.max_per_order, description: c.description, active: c.active,
+              seating: !!c.seating,
               sold: soldMap[c.id] || 0, remaining: Math.max(0, c.quota - (soldMap[c.id] || 0))
             }))
         }));
     },
 
+    /* --- Sitzplätze --- */
+    async seatMap(eventId) {
+      const { data, error } = await sb.rpc('seat_map', { p_event: eventId });
+      if (error) throw new Error(error.message);
+      return (data || []).map(s => ({ id: s.id, row: s.row_no, table: s.table_no, seat: s.seat_no, status: s.status }));
+    },
+    async seatCount(eventId) {
+      const { count } = await sb.from('seats').select('id', { count: 'exact', head: true }).eq('event_id', eventId);
+      return count || 0;
+    },
+    async generateSeats(eventId, rows, tables, perTable) {
+      rows = parseInt(rows, 10); tables = parseInt(tables, 10); perTable = parseInt(perTable, 10);
+      if (!(rows > 0 && tables > 0 && perTable > 0)) throw new Error('Bitte Reihen, Tische und Sitze (je > 0) angeben.');
+      if (rows * tables * perTable > 2000) throw new Error('Maximal 2000 Sitzplätze pro Event.');
+      const seatRows = [];
+      for (let r = 1; r <= rows; r++)
+        for (let t = 1; t <= tables; t++)
+          for (let s = 1; s <= perTable; s++)
+            seatRows.push({ event_id: eventId, row_no: r, table_no: t, seat_no: s });
+      // in Blöcken einfügen
+      for (let i = 0; i < seatRows.length; i += 500) {
+        const { error } = await sb.from('seats').insert(seatRows.slice(i, i + 500));
+        if (error) throw new Error(error.message);
+      }
+      return seatRows.length;
+    },
+    async clearSeats(eventId) {
+      // nur möglich, wenn keine Plätze verkauft sind
+      const map = await this.seatMap(eventId);
+      if (map.some(s => s.status === 'sold')) throw new Error('Es sind bereits Sitzplätze verkauft – Plan kann nicht geleert werden.');
+      const { error } = await sb.from('seats').delete().eq('event_id', eventId);
+      if (error) throw new Error(error.message);
+    },
+
     /* --- Checkout (Stripe) --- */
     async startCheckout(items) {
-      // items: [{category_id, qty}] – Edge Function prüft alles serverseitig
+      // items: [{category_id, qty, seat_ids?}] – Edge Function prüft alles serverseitig
       const { data, error } = await sb.functions.invoke('create-checkout', { body: { items } });
       if (error) {
         let msg = 'Zahlung konnte nicht gestartet werden.';
@@ -226,7 +262,7 @@
         const crow = {
           event_id: eventId, name: c.name, price: c.price, quota: c.quota,
           max_per_order: c.maxPerOrder || 10, description: c.description || null,
-          active: !!c.active, sort: i
+          active: !!c.active, sort: i, seating: !!c.seating
         };
         if (c.id && (existing || []).some(x => x.id === c.id)) {
           keep.add(c.id);

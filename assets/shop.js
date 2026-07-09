@@ -6,6 +6,7 @@
   const $ = id => document.getElementById(id);
 
   let cart = {};          // { categoryId: qty }
+  let selectedSeats = {}; // { categoryId: [seatId, …] }
   let eventsCache = [];
   let pendingEmail = '';
   let afterLogin = null;
@@ -99,6 +100,7 @@
         const max = btn.dataset.max ? parseInt(btn.dataset.max, 10) : 99;
         cart[key] = Math.max(0, Math.min(max, (cart[key] || 0) + d));
         if (!cart[key]) delete cart[key];
+        delete selectedSeats[key]; // Sitzplatzwahl bei Mengenänderung zurücksetzen
         box.querySelector('[data-qty="' + key + '"]').value = cart[key] || 0;
         renderCartBar();
       });
@@ -179,32 +181,134 @@
     }
   }
 
+  /* ---------- Sitzplatz-Auswahl ---------- */
+  function seatLabel(s) {
+    return 'Reihe ' + s.row + ' · Tisch ' + s.table + ' · Platz ' + s.seat;
+  }
+
+  async function openSeatPicker(line, doneCb) {
+    const need = line.qty;
+    let seats;
+    try { seats = await S.seatMap(line.ev.id); }
+    catch (e) { msg($('checkoutMsg'), 'Sitzplan konnte nicht geladen werden: ' + e.message, 'error'); return; }
+    if (!seats.length) {
+      msg($('checkoutMsg'), 'Für „' + line.cat.name + '“ ist noch kein Sitzplan hinterlegt. Bitte an die Veranstalter wenden.', 'error');
+      return;
+    }
+    seatById[line.ev.id] = {};
+    seats.forEach(s => { seatById[line.ev.id][s.id] = s; });
+    const chosen = new Set();
+    $('seatTitle').textContent = need + (need > 1 ? ' Sitzplätze' : ' Sitzplatz') + ' wählen';
+    $('seatSub').textContent = line.cat.name + ' – ' + line.ev.name;
+
+    // nach Reihe → Tisch gruppieren
+    const rows = {};
+    seats.forEach(s => {
+      rows[s.row] = rows[s.row] || {};
+      rows[s.row][s.table] = rows[s.row][s.table] || [];
+      rows[s.row][s.table].push(s);
+    });
+
+    function render() {
+      $('seatCount').textContent = chosen.size + ' / ' + need + ' gewählt';
+      $('btnSeatConfirm').disabled = chosen.size !== need;
+      $('seatMapArea').innerHTML = Object.keys(rows).map(r =>
+        '<div class="seat-row"><div class="seat-row-label">Reihe ' + esc(r) + '</div>' +
+        '<div class="seat-tables">' + Object.keys(rows[r]).map(t =>
+          '<div class="seat-table"><div class="seat-table-label">Tisch ' + esc(t) + '</div>' +
+          '<div class="seat-dots">' + rows[r][t].map(s => {
+            const sel = chosen.has(s.id);
+            const cls = s.status !== 'free' ? 'taken' : (sel ? 'sel' : 'free');
+            return '<button type="button" class="seat ' + cls + '" data-id="' + s.id +
+              '" ' + (s.status !== 'free' ? 'disabled' : '') + ' title="' + esc(seatLabel(s)) + '">' + s.seat + '</button>';
+          }).join('') + '</div></div>').join('') +
+        '</div></div>').join('');
+      $('seatMapArea').querySelectorAll('.seat.free, .seat.sel').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          if (chosen.has(id)) chosen.delete(id);
+          else { if (chosen.size >= need) return; chosen.add(id); }
+          render();
+        });
+      });
+    }
+    render();
+    $('btnSeatConfirm').onclick = () => {
+      if (chosen.size !== need) return;
+      doneCb(Array.from(chosen));
+      closeModal('seatModal');
+    };
+    openModal('seatModal');
+  }
+
   /* ---------- Checkout (Stripe) ---------- */
   function openCheckout() {
     const user = S.currentUser();
     if (!user) { openLogin(openCheckout); return; }
-    const { total, lines } = cartDetails();
+    const { lines } = cartDetails();
     if (!lines.length) return;
+    // Sitzkarten ohne (passende) Platzwahl → zuerst Sitzplan öffnen
+    const needSeat = lines.find(l => l.cat.seating &&
+      (!(selectedSeats[l.cat.id]) || selectedSeats[l.cat.id].length !== l.qty));
+    if (needSeat) {
+      openSeatPicker(needSeat, (ids) => { selectedSeats[needSeat.cat.id] = ids; openCheckout(); });
+      return;
+    }
+    renderCheckoutSummary();
+  }
+
+  function renderCheckoutSummary() {
+    const user = S.currentUser();
+    const { total, lines } = cartDetails();
     $('checkoutEmail').textContent = 'Bestellung für: ' + user;
-    $('checkoutItems').innerHTML = lines.map(l =>
-      '<div class="cat-row"><div class="cat-info"><div class="name">' + l.qty + '× ' + esc(l.cat.name) + '</div>' +
-      '<div class="desc">' + esc(l.ev.name) + ' · ' + fmtDate(l.ev.date) + '</div></div>' +
-      '<div class="cat-price">' + S.fmtEUR.format(l.sum) + '</div></div>').join('');
+    $('checkoutItems').innerHTML = lines.map(l => {
+      let seatInfo = '';
+      if (l.cat.seating && selectedSeats[l.cat.id]) {
+        const map = seatById[l.ev.id] || {};
+        seatInfo = '<div class="desc" style="color:var(--gold-light)">Plätze: ' +
+          selectedSeats[l.cat.id].map(id => map[id] ? ('R' + map[id].row + '·T' + map[id].table + '·P' + map[id].seat) : '?').join(', ') +
+          ' <button type="button" class="linklike" data-changeseat="' + l.cat.id + '">ändern</button></div>';
+      }
+      return '<div class="cat-row"><div class="cat-info"><div class="name">' + l.qty + '× ' + esc(l.cat.name) + '</div>' +
+        '<div class="desc">' + esc(l.ev.name) + ' · ' + fmtDate(l.ev.date) + '</div>' + seatInfo + '</div>' +
+        '<div class="cat-price">' + S.fmtEUR.format(l.sum) + '</div></div>';
+    }).join('');
     $('checkoutTotal').textContent = 'Gesamt: ' + S.fmtEUR.format(total);
     $('checkoutNote').textContent = 'Du wirst zur sicheren Stripe-Bezahlseite weitergeleitet ' +
       '(Kreditkarte, Apple Pay u. a.). Deine Tickets werden sofort nach erfolgreicher Zahlung freigeschaltet.';
     msg($('checkoutMsg'), '');
+    $('checkoutItems').querySelectorAll('[data-changeseat]').forEach(b => b.addEventListener('click', () => {
+      const catId = b.dataset.changeseat;
+      delete selectedSeats[catId];
+      closeModal('checkoutModal');
+      openCheckout();
+    }));
     openModal('checkoutModal');
+  }
+
+  // Cache: seatId -> seat (für Anzeige der gewählten Plätze)
+  const seatById = {};
+  async function cacheSeats(eventId) {
+    if (seatById[eventId]) return;
+    try {
+      const seats = await S.seatMap(eventId);
+      seatById[eventId] = {};
+      seats.forEach(s => { seatById[eventId][s.id] = s; });
+    } catch (_) {}
   }
 
   async function placeOrder() {
     const { lines } = cartDetails();
-    const items = lines.map(l => ({ category_id: l.cat.id, qty: l.qty }));
+    const items = lines.map(l => {
+      const it = { category_id: l.cat.id, qty: l.qty };
+      if (l.cat.seating && selectedSeats[l.cat.id]) it.seat_ids = selectedSeats[l.cat.id];
+      return it;
+    });
     try {
       $('btnPlaceOrder').disabled = true;
       msg($('checkoutMsg'), 'Bezahlvorgang wird gestartet …', 'info');
       const res = await S.startCheckout(items);
-      cart = {};
+      cart = {}; selectedSeats = {};
       window.location.href = res.url;
     } catch (e) {
       msg($('checkoutMsg'), e.message, 'error');
@@ -261,6 +365,7 @@
       '<div class="tinfo">' +
       '<div class="tcode">' + esc(t.code) + '</div>' +
       '<div>' + esc(t.categoryName) + ' – ' + esc(t.eventName) + '</div>' +
+      (t.seat ? '<div class="tseat">🎟 Reihe ' + t.seat.row + ' · Tisch ' + t.seat.table + ' · Platz ' + t.seat.seat + '</div>' : '') +
       '<div class="tmeta">' + fmtDate(t.eventDate) + (t.eventLocation ? ' · ' + esc(t.eventLocation) : '') +
       ' · ' + S.fmtEUR.format(t.price) + '</div>' +
       '<div style="margin-top:6px">' +

@@ -34,7 +34,9 @@ Deno.serve(async (req) => {
     }
     const email = userData.user.email.toLowerCase();
 
-    const { items } = await req.json() as { items: { category_id: string; qty: number }[] };
+    const { items } = await req.json() as {
+      items: { category_id: string; qty: number; seat_ids?: string[] }[];
+    };
     if (!Array.isArray(items) || !items.length) {
       return json({ error: "Der Warenkorb ist leer." }, 400);
     }
@@ -43,7 +45,7 @@ Deno.serve(async (req) => {
     const ids = items.map((i) => i.category_id);
     const { data: cats, error: catErr } = await admin
       .from("categories")
-      .select("id,name,price,quota,max_per_order,active,event_id,events(name,date,location,active)")
+      .select("id,name,price,quota,max_per_order,active,seating,event_id,events(name,date,location,active)")
       .in("id", ids);
     if (catErr) throw catErr;
 
@@ -53,6 +55,7 @@ Deno.serve(async (req) => {
     let total = 0;
     const orderItems: Record<string, unknown>[] = [];
     const lineItems: string[] = [];
+    const allSeatIds: string[] = [];
     let li = 0;
     for (const it of items) {
       const cat = (cats ?? []).find((c) => c.id === it.category_id);
@@ -64,6 +67,18 @@ Deno.serve(async (req) => {
       }
       const rest = cat.quota - (soldMap.get(cat.id) ?? 0);
       if (qty > rest) return json({ error: `Für „${cat.name}“ sind nur noch ${Math.max(0, rest)} Tickets verfügbar.` }, 400);
+      // Sitzplätze: für Sitzkarten müssen genau qty gültige Plätze gewählt sein
+      if (cat.seating) {
+        const seatIds = Array.isArray(it.seat_ids) ? it.seat_ids : [];
+        if (seatIds.length !== qty) {
+          return json({ error: `Bitte genau ${qty} Sitzplatz/Sitzplätze für „${cat.name}“ wählen.` }, 400);
+        }
+        const { data: seatRows } = await admin.from("seats").select("id").eq("event_id", cat.event_id).in("id", seatIds);
+        if (!seatRows || seatRows.length !== seatIds.length) {
+          return json({ error: "Ein gewählter Sitzplatz gehört nicht zu diesem Event." }, 400);
+        }
+        allSeatIds.push(...seatIds);
+      }
       total += Number(cat.price) * qty;
       orderItems.push({
         category_id: cat.id, event_name: ev.name, category_name: cat.name, price: cat.price, qty,
@@ -87,11 +102,22 @@ Deno.serve(async (req) => {
     );
     if (iErr) throw iErr;
 
-    // Stripe Checkout Session
+    // Sitzplätze reservieren (atomar) – bei Konflikt Bestellung verwerfen
+    if (allSeatIds.length) {
+      const { error: holdErr } = await admin.rpc("hold_seats", { p_order: orderId, p_seats: allSeatIds, p_minutes: 30 });
+      if (holdErr) {
+        await admin.from("orders").delete().eq("id", orderId);
+        return json({ error: (holdErr.message || "Sitzplatz nicht mehr verfügbar.").replace(/^.*?:\s*/, "") }, 409);
+      }
+    }
+
+    // Stripe Checkout Session – bei Sitzplätzen läuft die Session mit der
+    // 30-Minuten-Reservierung ab, damit keine Doppelbelegung entstehen kann.
     const body =
       `mode=payment&client_reference_id=${orderId}` +
       `&customer_email=${encodeURIComponent(email)}` +
       `&metadata[order_id]=${orderId}` +
+      (allSeatIds.length ? `&expires_at=${Math.floor(Date.now() / 1000) + 30 * 60}` : "") +
       `&success_url=${encodeURIComponent(SHOP_URL + "/tickets.html?order=" + orderId + "&paid=1")}` +
       `&cancel_url=${encodeURIComponent(SHOP_URL + "/tickets.html?cancelled=1")}` +
       `&${lineItems.join("&")}`;
