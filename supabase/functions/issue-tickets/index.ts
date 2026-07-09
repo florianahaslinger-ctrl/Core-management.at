@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
 
     const { data: cat } = await admin
       .from("categories")
-      .select("id,name,price,quota,event_id,events(name,date,location)")
+      .select("id,name,price,quota,seating,event_id,events(name,date,location)")
       .eq("id", body.category_id).maybeSingle();
     if (!cat) return json({ error: "Ticketkategorie nicht gefunden." }, 400);
     const ev = cat.events as { name: string; date: string; location: string };
@@ -69,6 +69,17 @@ Deno.serve(async (req) => {
     const { data: soldRow } = await admin.from("category_sold").select("sold").eq("category_id", cat.id).maybeSingle();
     const rest = (cat.quota ?? 0) - (soldRow?.sold ?? 0);
     if (qty > rest) return json({ error: `Nur noch ${Math.max(0, rest)} Tickets im Kontingent von „${cat.name}“.` }, 400);
+
+    // Sitzkarten: freie Plätze automatisch zuweisen
+    let freeSeatIds: string[] = [];
+    if (cat.seating) {
+      const { data: map } = await admin.rpc("seat_map", { p_event: cat.event_id });
+      freeSeatIds = (map ?? []).filter((s: { status: string }) => s.status === "free")
+        .slice(0, qty).map((s: { id: string }) => s.id);
+      if (freeSeatIds.length < qty) {
+        return json({ error: `Nicht genug freie Sitzplätze (nur ${freeSeatIds.length} frei).` }, 400);
+      }
+    }
 
     const unit = mode === "bar" ? Number(cat.price) : 0;
     const total = unit * qty;
@@ -88,6 +99,7 @@ Deno.serve(async (req) => {
         code: ticketCode(), order_id: orderId, category_id: cat.id,
         event_name: ev.name, event_date: ev.date, event_location: ev.location,
         category_name: cat.name, price: unit,
+        seat_id: cat.seating ? (freeSeatIds[i] ?? null) : null,
       });
     }
     const { error: tErr } = await admin.from("tickets").insert(tickets);

@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
   }
 
   const { data: items, error: itemsErr } = await admin.from("order_items")
-    .select("category_id,event_name,category_name,price,qty,categories(event_id,events(date,location))")
+    .select("category_id,event_name,category_name,price,qty,categories(seating,event_id,events(date,location))")
     .eq("order_id", orderId);
   if (itemsErr || !items?.length) {
     console.error("order_items fehlen für", orderId, itemsErr);
@@ -66,14 +66,18 @@ Deno.serve(async (req) => {
   }
 
   const tickets: Record<string, unknown>[] = [];
+  const seatedCodes: string[] = []; // Codes der Sitzkarten-Tickets (in Reihenfolge)
   for (const it of items ?? []) {
-    const ev = (it.categories as { events?: { date?: string; location?: string } } | null)?.events;
+    const cats = it.categories as { seating?: boolean; events?: { date?: string; location?: string } } | null;
+    const ev = cats?.events;
     for (let i = 0; i < it.qty; i++) {
+      const code = ticketCode();
       tickets.push({
-        code: ticketCode(), order_id: orderId, category_id: it.category_id,
+        code, order_id: orderId, category_id: it.category_id,
         event_name: it.event_name, event_date: ev?.date ?? null, event_location: ev?.location ?? null,
         category_name: it.category_name, price: it.price,
       });
+      if (cats?.seating) seatedCodes.push(code);
     }
   }
   const { error: tErr } = await admin.from("tickets").insert(tickets);
@@ -81,6 +85,17 @@ Deno.serve(async (req) => {
     console.error(tErr);
     return new Response("Ticket insert failed", { status: 500 });
   }
+
+  // Reservierte Sitzplätze den Sitzkarten-Tickets zuweisen
+  if (seatedCodes.length) {
+    const { data: holds } = await admin.from("seat_holds").select("seat_id").eq("order_id", orderId);
+    const seatIds = (holds ?? []).map((h) => h.seat_id);
+    for (let i = 0; i < seatedCodes.length && i < seatIds.length; i++) {
+      await admin.from("tickets").update({ seat_id: seatIds[i] }).eq("code", seatedCodes[i]);
+    }
+    await admin.from("seat_holds").delete().eq("order_id", orderId);
+  }
+
   await admin.from("orders").update({
     status: "bezahlt", paid_via: "stripe", paid_at: new Date().toISOString(),
     stripe_session_id: session.id,

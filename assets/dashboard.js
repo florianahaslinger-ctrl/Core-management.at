@@ -229,14 +229,15 @@
   }
 
   function catRowHTML(c) {
-    c = c || { id: '', name: '', price: '', quota: '', description: '', active: true, maxPerOrder: 10 };
+    c = c || { id: '', name: '', price: '', quota: '', description: '', active: true, maxPerOrder: 10, seating: false };
     return '<div class="admin-cat" data-cat="' + esc(c.id) + '">' +
       '<div style="flex:2 1 160px"><label>Name</label><input type="text" class="c-name" value="' + esc(c.name) + '" placeholder="z. B. VIP"></div>' +
       '<div><label>Preis (€)</label><input type="number" class="c-price" min="0" step="0.5" value="' + esc(c.price) + '"></div>' +
       '<div><label>Kontingent</label><input type="number" class="c-quota" min="0" step="1" value="' + esc(c.quota) + '"></div>' +
       '<div><label>Max./Bestellung</label><input type="number" class="c-max" min="1" step="1" value="' + esc(c.maxPerOrder || 10) + '"></div>' +
       '<div style="flex:2 1 200px"><label>Beschreibung</label><input type="text" class="c-desc" value="' + esc(c.description || '') + '"></div>' +
-      '<div style="flex:0 0 auto"><label class="switch" style="margin:0 0 8px"><input type="checkbox" class="c-active"' + (c.active ? ' checked' : '') + '> aktiv</label>' +
+      '<div style="flex:0 0 auto"><label class="switch" style="margin:0 0 6px"><input type="checkbox" class="c-active"' + (c.active ? ' checked' : '') + '> aktiv</label>' +
+      '<label class="switch" style="margin:0 0 8px" title="Nur bei Sitzkarten wählen Kund:innen einen Sitzplatz"><input type="checkbox" class="c-seating"' + (c.seating ? ' checked' : '') + '> Sitzkarte</label>' +
       '<button type="button" class="btn btn-danger btn-sm c-remove">Entfernen</button></div>' +
       '</div>';
   }
@@ -260,6 +261,22 @@
     $('catEditor').innerHTML = (ev && ev.categories.length ? ev.categories : [null]).map(catRowHTML).join('');
     bindCatRemove();
     msg($('evMsg'), '');
+    // Sitzplan-Bereich nur bei bestehenden Events
+    const box = $('seatPlanBox');
+    msg($('seatPlanMsg'), '');
+    if (ev) {
+      box.style.display = '';
+      $('seatPlanInfo').textContent = 'Sitzplan wird geladen …';
+      S.seatMap(ev.id).then(seats => {
+        const total = seats.length;
+        const sold = seats.filter(s => s.status === 'sold').length;
+        $('seatPlanInfo').textContent = total
+          ? (total + ' Sitzplätze angelegt' + (sold ? ' · ' + sold + ' verkauft' : '') + '.')
+          : 'Noch kein Sitzplan angelegt.';
+      }).catch(() => { $('seatPlanInfo').textContent = ''; });
+    } else {
+      box.style.display = 'none';
+    }
     $('eventModal').classList.add('open');
   }
 
@@ -363,7 +380,7 @@
   async function doCheckin() {
     try {
       const res = await S.checkIn($('checkinCode').value);
-      msg($('checkinMsg'), '✓ Eingecheckt: ' + res.code + ' – ' + res.category + ' (' + res.email + ')', 'ok');
+      msg($('checkinMsg'), '✓ Eingecheckt: ' + res.code + ' – ' + res.category + (res.seat ? ' · ' + res.seat : '') + ' (' + res.email + ')', 'ok');
       $('checkinCode').value = '';
       await renderAll();
     } catch (e) { msg($('checkinMsg'), e.message, 'error'); }
@@ -456,7 +473,7 @@
     lastScan = { code, at: now };
     try {
       const res = await S.checkIn(code);
-      msg($('scanMsg'), '✓ Eingecheckt: ' + res.code + ' – ' + res.category + ' (' + res.email + ')', 'ok');
+      msg($('scanMsg'), '✓ Eingecheckt: ' + res.code + ' – ' + res.category + (res.seat ? ' · ' + res.seat : '') + ' (' + res.email + ')', 'ok');
       if (navigator.vibrate) navigator.vibrate(120);
       renderAll();
     } catch (e) {
@@ -542,6 +559,33 @@
   $('orderFilter').addEventListener('change', renderOrders);
   $('btnCheckin').addEventListener('click', doCheckin);
   $('checkinCode').addEventListener('keydown', e => { if (e.key === 'Enter') doCheckin(); });
+  $('btnGenSeats').addEventListener('click', async () => {
+    const id = $('evId').value;
+    if (!id) { msg($('seatPlanMsg'), 'Bitte das Event zuerst speichern.', 'error'); return; }
+    try {
+      $('btnGenSeats').disabled = true;
+      const existing = await S.seatMap(id);
+      if (existing.length) {
+        if (existing.some(s => s.status === 'sold')) { msg($('seatPlanMsg'), 'Es sind bereits Plätze verkauft – Plan kann nicht neu erstellt werden.', 'error'); return; }
+        if (!confirm('Es existiert bereits ein Sitzplan (' + existing.length + ' Plätze). Neu erstellen und alten ersetzen?')) return;
+        await S.clearSeats(id);
+      }
+      const n = await S.generateSeats(id, $('spRows').value, $('spTables').value, $('spSeats').value);
+      msg($('seatPlanMsg'), '✓ Sitzplan mit ' + n + ' Plätzen erstellt.', 'ok');
+      $('seatPlanInfo').textContent = n + ' Sitzplätze angelegt.';
+    } catch (e) { msg($('seatPlanMsg'), e.message, 'error'); }
+    finally { $('btnGenSeats').disabled = false; }
+  });
+  $('btnClearSeats').addEventListener('click', async () => {
+    const id = $('evId').value;
+    if (!id) return;
+    if (!confirm('Sitzplan wirklich leeren?')) return;
+    try {
+      await S.clearSeats(id);
+      msg($('seatPlanMsg'), 'Sitzplan geleert.', 'ok');
+      $('seatPlanInfo').textContent = 'Noch kein Sitzplan angelegt.';
+    } catch (e) { msg($('seatPlanMsg'), e.message, 'error'); }
+  });
   $('btnIssue').addEventListener('click', doIssue);
   $('btnScanStart').addEventListener('click', scanStart);
   $('btnScanStop').addEventListener('click', scanStop);
@@ -568,8 +612,12 @@
       quota: parseInt(row.querySelector('.c-quota').value, 10) || 0,
       maxPerOrder: parseInt(row.querySelector('.c-max').value, 10) || 10,
       description: row.querySelector('.c-desc').value.trim(),
-      active: row.querySelector('.c-active').checked
+      active: row.querySelector('.c-active').checked,
+      seating: row.querySelector('.c-seating').checked
     })).filter(c => c.name);
+    if (cats.filter(c => c.seating).length > 1) {
+      msg($('evMsg'), 'Es kann nur eine Kategorie als Sitzkarte markiert sein.', 'error'); return;
+    }
     const ev = {
       id: $('evId').value || null,
       name: $('evName').value.trim(),

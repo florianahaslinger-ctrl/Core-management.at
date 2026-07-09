@@ -41,6 +41,19 @@ verwaltbar im Dashboard unter *Einstellungen → Admins verwalten*. Erster Admin
 
   Unbezahlte, stornierte oder bereits entwertete Tickets werden immer abgewiesen; jede Entwertung ist einmalig.
 
+## Sitzplätze (nur für „Sitzkarten“)
+
+Optional kann **eine** Ticketkategorie Sitzplätze bekommen; alle anderen bleiben Stehkarten ohne Platzwahl.
+
+**Einrichten (Dashboard → Events & Tickets → Event bearbeiten):**
+1. Bei der gewünschten Kategorie das Häkchen **„Sitzkarte“** setzen (nur eine Kategorie pro Event möglich) und speichern.
+2. Im selben Dialog erscheint der Bereich **„Sitzplan“**: **Reihen**, **Tische pro Reihe** und **Sitze pro Tisch** eingeben und **„Sitzplan erstellen“**. Beispiel Ball: 5 Reihen × 10 Tische × 6 Sitze = 300 Plätze. Alles frei einstellbar.
+3. Der Plan kann geleert/neu erstellt werden, solange noch keine Plätze verkauft sind.
+
+**Kauf durch Familien:** Beim Kauf einer Sitzkarte öffnet sich der Sitzplan; die Familie klickt genau so viele freie Plätze an, wie sie Tickets kauft (z. B. 6 Plätze an einem Tisch, um zusammenzusitzen). Die Plätze werden **30 Minuten reserviert** und erst nach bestätigter Zahlung fest zugewiesen – doppelte Belegung ist ausgeschlossen. Der Sitzplatz steht danach auf dem Ticket, im PDF, in der Ticketprüfung und beim Check-in (Reihe · Tisch · Platz).
+
+Vom Admin ausgestellte Sitzkarten (Tab „Tickets ausstellen“) bekommen automatisch die nächsten freien Plätze zugewiesen.
+
 ## Wichtig für den echten Betrieb
 
 1. **E-Mail-Versand (eingerichtet ✓):** Anmelde-Codes werden über **Brevo** verschickt – nicht mehr über den

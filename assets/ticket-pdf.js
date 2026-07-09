@@ -137,6 +137,11 @@
     s += line(70, 648, 'F1', 13, '0.08 0.06 0.02', t.categoryName);
     s += line(280, 648, 'F1', 13, '0 0 0', eur.format(t.price));
 
+    // Sitzplatz (falls vorhanden)
+    if (t.seat) {
+      s += line(60, 616, 'F1', 13, GOLD, 'Sitzplatz: Reihe ' + t.seat.row + ' · Tisch ' + t.seat.table + ' · Platz ' + t.seat.seat);
+    }
+
     // Bestelldaten
     s += line(60, 600, 'F2', 10, GRAY, 'Bestellung: ' + order.id + '   ·   ' + order.email);
     s += line(60, 584, 'F2', 10, GRAY, 'Bestellt am: ' + new Date(order.createdAt).toLocaleString('de-AT') +

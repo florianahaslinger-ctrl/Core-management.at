@@ -83,6 +83,26 @@
   </div>
 </div>
 
+<!-- Sitzplatz-Auswahl -->
+<div class="modal-backdrop" id="seatModal">
+  <div class="modal modal-wide">
+    <h2 id="seatTitle">Sitzplätze wählen</h2>
+    <p class="sub" id="seatSub"></p>
+    <div class="seat-legend">
+      <span><i class="seat free"></i> frei</span>
+      <span><i class="seat sel"></i> gewählt</span>
+      <span><i class="seat taken"></i> belegt</span>
+    </div>
+    <div id="seatMapArea" class="seat-map"></div>
+    <div style="display:flex;gap:10px;margin-top:18px;align-items:center;flex-wrap:wrap">
+      <span id="seatCount" class="seat-count"></span>
+      <span style="flex:1"></span>
+      <button class="btn btn-gold" id="btnSeatConfirm" disabled>Weiter</button>
+      <button class="btn btn-ghost" onclick="closeModal('seatModal')">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
 <!-- Checkout -->
 <div class="modal-backdrop" id="checkoutModal">
   <div class="modal modal-wide">
