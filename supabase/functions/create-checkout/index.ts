@@ -82,6 +82,8 @@ Deno.serve(async (req) => {
       total += Number(cat.price) * qty;
       orderItems.push({
         category_id: cat.id, event_name: ev.name, category_name: cat.name, price: cat.price, qty,
+        _seating: !!cat.seating, _seatIds: cat.seating ? (it.seat_ids ?? []) : [],
+        _eventDate: ev.date ?? null, _eventLocation: ev.location ?? null,
       });
       const cents = Math.round(Number(cat.price) * 100);
       lineItems.push(
@@ -98,7 +100,10 @@ Deno.serve(async (req) => {
     const { error: oErr } = await admin.from("orders").insert({ id: orderId, email, total, status: "offen" });
     if (oErr) throw oErr;
     const { error: iErr } = await admin.from("order_items").insert(
-      orderItems.map((x) => ({ ...x, order_id: orderId })),
+      orderItems.map((x) => ({
+        order_id: orderId, category_id: x.category_id, event_name: x.event_name,
+        category_name: x.category_name, price: x.price, qty: x.qty,
+      })),
     );
     if (iErr) throw iErr;
 
@@ -109,6 +114,35 @@ Deno.serve(async (req) => {
         await admin.from("orders").delete().eq("id", orderId);
         return json({ error: (holdErr.message || "Sitzplatz nicht mehr verfügbar.").replace(/^.*?:\s*/, "") }, 409);
       }
+    }
+
+    // Gratis-Bestellung (0 €): keine Stripe-Zahlung – Tickets sofort erzeugen
+    if (total === 0) {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      const ticketCode = () => {
+        const r = crypto.getRandomValues(new Uint8Array(8));
+        const b = (o: number) => Array.from(r.slice(o, o + 4)).map((x) => chars[x % chars.length]).join("");
+        return "CM-" + b(0) + "-" + b(4);
+      };
+      const tickets: Record<string, unknown>[] = [];
+      for (const x of orderItems) {
+        const seatIds = x._seating ? (x._seatIds as string[]) : [];
+        for (let i = 0; i < (x.qty as number); i++) {
+          tickets.push({
+            code: ticketCode(), order_id: orderId, category_id: x.category_id,
+            event_name: x.event_name, event_date: x._eventDate, event_location: x._eventLocation,
+            category_name: x.category_name, price: x.price,
+            seat_id: x._seating ? (seatIds[i] ?? null) : null,
+          });
+        }
+      }
+      const { error: tErr } = await admin.from("tickets").insert(tickets);
+      if (tErr) { await admin.from("orders").delete().eq("id", orderId); throw tErr; }
+      await admin.from("seat_holds").delete().eq("order_id", orderId);
+      await admin.from("orders").update({
+        status: "bezahlt", paid_via: "gratis", paid_at: new Date().toISOString(),
+      }).eq("id", orderId);
+      return json({ url: SHOP_URL + "/tickets.html?order=" + orderId + "&paid=1", order_id: orderId, free: true });
     }
 
     // Stripe Checkout Session – bei Sitzplätzen läuft die Session mit der
