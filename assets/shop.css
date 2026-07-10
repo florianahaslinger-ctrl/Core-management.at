@@ -243,6 +243,12 @@ footer.shop-footer a:hover{color:var(--gold)}
 .seat.sel{background:var(--gold-grad);color:#181206;border-color:var(--gold);font-weight:bold}
 .seat.taken{background:#0a0a0a;color:#3a3a3a;border-color:#222;cursor:not-allowed}
 .seat-count{font-size:14px;color:var(--gold-light)}
+/* Admin-Sitzplan (Gäste umsetzen) */
+.seat.occupied{background:rgba(201,168,76,.22);color:var(--gold-light);border-color:rgba(201,168,76,.55)}
+.seat.occupied:hover{border-color:var(--gold-light)}
+.seat.occupied.in{background:rgba(91,143,217,.22);color:#9cc2ea;border-color:rgba(91,143,217,.6)}
+.seat.hold{background:rgba(199,126,46,.15);color:var(--warn);border-color:rgba(199,126,46,.5);cursor:not-allowed}
+.seat.src{outline:2px solid var(--gold-light);outline-offset:2px;background:var(--gold-grad);color:#181206;font-weight:bold}
 
 @media(max-width:640px){
   .wrap{padding:40px 5vw}

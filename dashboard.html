@@ -59,6 +59,7 @@
   <div class="dash-tabs" id="tabs">
     <button data-tab="tabOverview" class="active">Übersicht</button>
     <button data-tab="tabEvents">Events &amp; Tickets</button>
+    <button data-tab="tabSeats">Sitzplan</button>
     <button data-tab="tabIssue">Tickets ausstellen</button>
     <button data-tab="tabOrders">Bestellungen</button>
     <button data-tab="tabCheckin">Check-in</button>
@@ -94,6 +95,33 @@
       <button class="btn btn-gold btn-sm" id="btnNewEvent">+ Neues Event</button>
     </div>
     <div id="adminEvents"></div>
+  </div>
+
+  <!-- Sitzplan (Gäste umsetzen) -->
+  <div class="tabpane" id="tabSeats">
+    <div class="card">
+      <h2>Sitzplan &amp; Gäste umsetzen</h2>
+      <p class="sub">Belegten Platz anklicken (Gast auswählen), dann Zielplatz anklicken: <b>freier Platz</b> = Gast wird umgesetzt, <b>belegter Platz</b> = die beiden Gäste tauschen. So schließt du Lücken und setzt Familien zusammen.</p>
+      <div class="field-row" style="align-items:flex-end;margin-top:8px">
+        <div style="flex:2 1 260px">
+          <label for="smEvent">Event</label>
+          <select id="smEvent"></select>
+        </div>
+        <div style="flex:0 0 auto">
+          <button class="btn btn-ghost btn-sm" id="btnSmReload">Aktualisieren</button>
+        </div>
+      </div>
+      <div class="seat-legend" style="margin-top:14px">
+        <span><i class="seat free"></i> frei</span>
+        <span><i class="seat occupied"></i> belegt</span>
+        <span><i class="seat occupied in"></i> eingecheckt</span>
+        <span><i class="seat hold"></i> im Kauf reserviert</span>
+        <span><i class="seat src"></i> ausgewählt</span>
+      </div>
+      <div class="msg" id="smMsg"></div>
+      <div id="smInfo" class="hint" style="min-height:18px;margin:6px 0 10px"></div>
+      <div id="smMap" class="seat-map" style="max-height:60vh"></div>
+    </div>
   </div>
 
   <!-- Tickets ausstellen -->

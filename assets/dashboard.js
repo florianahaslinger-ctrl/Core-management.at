@@ -286,6 +286,102 @@
     });
   }
 
+  /* ================= Sitzplan: Gäste umsetzen ================= */
+  let smSource = null; // ausgewählter Quellplatz {id, code, email, label}
+  let smSeats = [];    // aktueller Admin-Sitzplan
+
+  function smLabel(s) { return 'Reihe ' + s.row + ' · Tisch ' + s.table + ' · Platz ' + s.seat; }
+
+  function renderSeatEventOptions() {
+    const sel = $('smEvent');
+    if (!sel) return;
+    const prev = sel.value;
+    const opts = events.map(ev =>
+      '<option value="' + esc(ev.id) + '">' + esc(ev.name) + '</option>');
+    sel.innerHTML = opts.length ? opts.join('') : '<option value="">Kein Event vorhanden</option>';
+    if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
+  }
+
+  async function renderSeatAdmin() {
+    const evId = $('smEvent').value;
+    const map = $('smMap');
+    smSource = null;
+    $('smInfo').textContent = '';
+    if (!evId) { map.innerHTML = '<p class="sub" style="padding:14px">Kein Event gewählt.</p>'; return; }
+    try {
+      smSeats = await S.adminSeatMap(evId);
+    } catch (e) { msg($('smMsg'), e.message, 'error'); return; }
+    if (!smSeats.length) {
+      map.innerHTML = '<p class="sub" style="padding:14px">Für dieses Event ist kein Sitzplan angelegt (Events &amp; Tickets → Bearbeiten → Sitzplan).</p>';
+      return;
+    }
+    const occ = smSeats.filter(s => s.status === 'sold').length;
+    $('smInfo').textContent = occ + ' von ' + smSeats.length + ' Plätzen belegt. ' +
+      (smSource ? '' : 'Belegten Platz anklicken, um einen Gast auszuwählen.');
+
+    const rows = {};
+    smSeats.forEach(s => {
+      rows[s.row] = rows[s.row] || {};
+      rows[s.row][s.table] = rows[s.row][s.table] || [];
+      rows[s.row][s.table].push(s);
+    });
+    map.innerHTML = Object.keys(rows).map(r =>
+      '<div class="seat-row"><div class="seat-row-label">Reihe ' + esc(r) + '</div>' +
+      '<div class="seat-tables">' + Object.keys(rows[r]).map(t =>
+        '<div class="seat-table"><div class="seat-table-label">Tisch ' + esc(t) + '</div>' +
+        '<div class="seat-dots">' + rows[r][t].map(s => {
+          let cls = 'free', title = smLabel(s) + ' – frei';
+          if (s.status === 'sold') {
+            cls = 'occupied' + (s.checkedIn ? ' in' : '');
+            title = smLabel(s) + ' – ' + (s.email || '') + ' (' + (s.code || '') + ')' + (s.checkedIn ? ' · eingecheckt' : '');
+          } else if (s.status === 'held') {
+            cls = 'hold'; title = smLabel(s) + ' – gerade im Kauf reserviert';
+          }
+          if (smSource && smSource.id === s.id) cls += ' src';
+          return '<button type="button" class="seat ' + cls + '" data-sid="' + s.id + '" title="' + esc(title) + '">' + s.seat + '</button>';
+        }).join('') + '</div></div>').join('') +
+      '</div></div>').join('');
+
+    map.querySelectorAll('.seat').forEach(btn => {
+      btn.addEventListener('click', () => smClick(btn.dataset.sid));
+    });
+  }
+
+  async function smClick(seatId) {
+    const s = smSeats.find(x => x.id === seatId);
+    if (!s) return;
+    msg($('smMsg'), '');
+    if (!smSource) {
+      if (s.status === 'held') { msg($('smMsg'), 'Dieser Platz ist gerade durch einen laufenden Kauf reserviert.', 'error'); return; }
+      if (s.status !== 'sold') { $('smInfo').textContent = 'Bitte zuerst einen belegten Platz (Gast) anklicken.'; return; }
+      smSource = { id: s.id, code: s.code, email: s.email, label: smLabel(s) };
+      $('smInfo').innerHTML = 'Ausgewählt: <b style="color:var(--gold-light)">' + esc(s.email || s.code) + '</b> (' + esc(smSource.label) + ') – jetzt Zielplatz anklicken. <button type="button" class="linklike" id="smCancel">Auswahl aufheben</button>';
+      // nur Markierung aktualisieren
+      document.querySelectorAll('#smMap .seat.src').forEach(b => b.classList.remove('src'));
+      document.querySelector('#smMap .seat[data-sid="' + seatId + '"]').classList.add('src');
+      const c = document.getElementById('smCancel');
+      if (c) c.addEventListener('click', () => { smSource = null; renderSeatAdmin(); });
+      return;
+    }
+    if (smSource.id === seatId) { smSource = null; renderSeatAdmin(); return; }
+    if (s.status === 'held') { msg($('smMsg'), 'Zielplatz ist gerade durch einen laufenden Kauf reserviert.', 'error'); return; }
+    const isSwap = s.status === 'sold';
+    const confirmText = isSwap
+      ? (smSource.email || smSource.code) + ' und ' + (s.email || s.code) + ' tauschen die Plätze?\n' + smSource.label + ' ⇄ ' + smLabel(s)
+      : (smSource.email || smSource.code) + ' umsetzen?\n' + smSource.label + ' → ' + smLabel(s);
+    if (!confirm(confirmText)) return;
+    try {
+      const res = await S.moveSeat(smSource.id, seatId);
+      msg($('smMsg'), res.action === 'swap'
+        ? '✓ Getauscht: ' + res.moved + ' ⇄ ' + res.swapped_with
+        : '✓ Umgesetzt: ' + res.moved + ' → ' + smLabel(s), 'ok');
+      smSource = null;
+      await renderSeatAdmin();
+    } catch (e) {
+      msg($('smMsg'), e.message, 'error');
+    }
+  }
+
   /* ================= Tickets ausstellen ================= */
   function renderIssueOptions() {
     const sel = $('issueCat');
@@ -539,6 +635,8 @@
     renderQuota();
     renderAdminEvents();
     renderIssueOptions();
+    renderSeatEventOptions();
+    renderSeatAdmin();
     renderOrders();
     renderCheckins();
     renderAdmins();
@@ -586,6 +684,8 @@
       $('seatPlanInfo').textContent = 'Noch kein Sitzplan angelegt.';
     } catch (e) { msg($('seatPlanMsg'), e.message, 'error'); }
   });
+  $('smEvent').addEventListener('change', renderSeatAdmin);
+  $('btnSmReload').addEventListener('click', renderSeatAdmin);
   $('btnIssue').addEventListener('click', doIssue);
   $('btnScanStart').addEventListener('click', scanStart);
   $('btnScanStop').addEventListener('click', scanStop);
