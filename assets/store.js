@@ -137,6 +137,21 @@
       }
       return seatRows.length;
     },
+    // Admin: Sitzplan mit Belegung (wer sitzt wo)
+    async adminSeatMap(eventId) {
+      const { data, error } = await sb.rpc('admin_seat_map', { p_event: eventId });
+      if (error) throw new Error(error.message.replace(/^.*?: /, ''));
+      return (data || []).map(s => ({
+        id: s.id, row: s.row_no, table: s.table_no, seat: s.seat_no, status: s.status,
+        code: s.ticket_code, email: s.guest_email, checkedIn: s.checked_in
+      }));
+    },
+    // Admin: Gast umsetzen (Ziel frei) oder zwei Gäste tauschen (Ziel belegt)
+    async moveSeat(fromSeatId, toSeatId) {
+      const { data, error } = await sb.rpc('admin_move_seat', { p_from: fromSeatId, p_to: toSeatId });
+      if (error) throw new Error(error.message.replace(/^.*?: /, ''));
+      return data; // { action: 'move'|'swap', moved, swapped_with? }
+    },
     async clearSeats(eventId) {
       // nur möglich, wenn keine Plätze verkauft sind
       const map = await this.seatMap(eventId);
