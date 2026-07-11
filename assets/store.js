@@ -31,6 +31,9 @@
   function mapOrder(o) {
     return {
       id: o.id, email: o.email, status: o.status, total: Number(o.total),
+      subtotal: o.subtotal != null ? Number(o.subtotal) : Number(o.total),
+      serviceFee: o.service_fee != null ? Number(o.service_fee) : 0,
+      paymentFee: o.payment_fee != null ? Number(o.payment_fee) : 0,
       paidVia: o.paid_via, paidAt: o.paid_at, createdAt: o.created_at,
       items: (o.order_items || []).map(i => ({
         categoryId: i.category_id, categoryName: i.category_name,
@@ -45,12 +48,28 @@
     };
   }
 
-  const ORDER_SELECT = 'id,email,status,total,paid_via,paid_at,created_at,' +
+  const ORDER_SELECT = 'id,email,status,total,subtotal,service_fee,payment_fee,paid_via,paid_at,created_at,' +
     'order_items(category_id,category_name,event_name,price,qty),' +
     'tickets(code,category_id,category_name,event_name,event_date,event_location,price,checked_in,checked_in_at,seats(row_no,table_no,seat_no))';
 
   const Store = {
     fmtEUR, validEmail, normEmail,
+
+    /* Gebühren-Aufschlüsselung – identisch zur Berechnung in create-checkout.
+       subtotal = Ticketpreis; Gebühren nur bei zahlungspflichtigen Bestellungen. */
+    feeBreakdown(subtotal) {
+      const subtotalCents = Math.round(Number(subtotal) * 100);
+      const paid = subtotalCents > 0;
+      const serviceCents = paid ? Math.round(subtotalCents * 0.035) : 0;
+      const paymentCents = paid ? Math.round(subtotalCents * 0.015) + 25 : 0;
+      const grandCents = subtotalCents + serviceCents + paymentCents;
+      return {
+        subtotal: subtotalCents / 100,
+        serviceFee: serviceCents / 100,
+        paymentFee: paymentCents / 100,
+        total: grandCents / 100,
+      };
+    },
 
     /* --- Initialisierung & Auth --- */
     async init() {
@@ -327,7 +346,11 @@
       const tickets = valid.flatMap(o => o.tickets);
       const paid = valid.filter(o => o.status === 'bezahlt');
       return {
-        revenue: paid.reduce((s, o) => s + o.total, 0),
+        // Umsatz = reiner Ticketpreis (ohne Gebühren)
+        revenue: paid.reduce((s, o) => s + (o.subtotal ?? o.total), 0),
+        serviceFees: paid.reduce((s, o) => s + (o.serviceFee || 0), 0),
+        paymentFees: paid.reduce((s, o) => s + (o.paymentFee || 0), 0),
+        collected: paid.reduce((s, o) => s + o.total, 0),
         orderCount: valid.length,
         ticketCount: tickets.length,
         checkinCount: tickets.filter(t => t.checkedIn).length,
@@ -346,7 +369,7 @@
         if (o.status !== 'bezahlt') return;
         const od = new Date(o.createdAt); od.setHours(0, 0, 0, 0);
         const slot = out.find(x => x.date.getTime() === od.getTime());
-        if (slot) { slot.qty += o.tickets.length; slot.revenue += o.total; }
+        if (slot) { slot.qty += o.tickets.length; slot.revenue += (o.subtotal ?? o.total); }
       });
       return out;
     },

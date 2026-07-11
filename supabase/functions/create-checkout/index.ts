@@ -95,9 +95,25 @@ Deno.serve(async (req) => {
       li++;
     }
 
-    // Bestellung anlegen (offen)
+    // Gebühren aufschlüsseln (nur bei zahlungspflichtigen Bestellungen):
+    //   Servicegebühr  = 3,5 % vom Ticketpreis        (CORE Management)
+    //   Zahlungsgebühr = 1,5 % vom Ticketpreis + 0,25 € (Stripe-Bearbeitung)
+    const subtotalCents = Math.round(total * 100);
+    const paid = subtotalCents > 0;
+    const serviceCents = paid ? Math.round(subtotalCents * 0.035) : 0;
+    const paymentCents = paid ? Math.round(subtotalCents * 0.015) + 25 : 0;
+    const grandCents = subtotalCents + serviceCents + paymentCents;
+    const subtotal = subtotalCents / 100;
+    const serviceFee = serviceCents / 100;
+    const paymentFee = paymentCents / 100;
+    const grandTotal = grandCents / 100;
+
+    // Bestellung anlegen (offen) – total ist der zu zahlende Gesamtbetrag inkl. Gebühren
     const orderId = "B" + Date.now().toString().slice(-8);
-    const { error: oErr } = await admin.from("orders").insert({ id: orderId, email, total, status: "offen" });
+    const { error: oErr } = await admin.from("orders").insert({
+      id: orderId, email, total: grandTotal, status: "offen",
+      subtotal, service_fee: serviceFee, payment_fee: paymentFee,
+    });
     if (oErr) throw oErr;
     const { error: iErr } = await admin.from("order_items").insert(
       orderItems.map((x) => ({
@@ -143,6 +159,26 @@ Deno.serve(async (req) => {
         status: "bezahlt", paid_via: "gratis", paid_at: new Date().toISOString(),
       }).eq("id", orderId);
       return json({ url: SHOP_URL + "/tickets.html?order=" + orderId + "&paid=1", order_id: orderId, free: true });
+    }
+
+    // Gebühren als eigene Positionen in der Stripe-Zahlung ausweisen
+    if (serviceCents > 0) {
+      lineItems.push(
+        `line_items[${li}][price_data][currency]=eur` +
+        `&line_items[${li}][price_data][product_data][name]=${encodeURIComponent("Servicegebühr (3,5 %)")}` +
+        `&line_items[${li}][price_data][unit_amount]=${serviceCents}` +
+        `&line_items[${li}][quantity]=1`,
+      );
+      li++;
+    }
+    if (paymentCents > 0) {
+      lineItems.push(
+        `line_items[${li}][price_data][currency]=eur` +
+        `&line_items[${li}][price_data][product_data][name]=${encodeURIComponent("Zahlungsgebühr (1,5 % + 0,25 €)")}` +
+        `&line_items[${li}][price_data][unit_amount]=${paymentCents}` +
+        `&line_items[${li}][quantity]=1`,
+      );
+      li++;
     }
 
     // Stripe Checkout Session – bei Sitzplätzen läuft die Session mit der

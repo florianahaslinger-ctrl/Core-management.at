@@ -273,7 +273,17 @@
         '<div class="desc">' + esc(l.ev.name) + ' · ' + fmtDate(l.ev.date) + '</div>' + seatInfo + '</div>' +
         '<div class="cat-price">' + S.fmtEUR.format(l.sum) + '</div></div>';
     }).join('');
-    $('checkoutTotal').textContent = 'Gesamt: ' + S.fmtEUR.format(total);
+    const fb = S.feeBreakdown(total);
+    const feeRow = (label, sub, val) =>
+      '<div class="fee-row"><span class="fee-label">' + label +
+      (sub ? '<span class="fee-sub">' + sub + '</span>' : '') + '</span>' +
+      '<span class="fee-val">' + S.fmtEUR.format(val) + '</span></div>';
+    $('checkoutBreakdown').innerHTML =
+      feeRow('Ticketpreis', '', fb.subtotal) +
+      (fb.serviceFee > 0 ? feeRow('Servicegebühr', '3,5 % · Organisation &amp; Abwicklung', fb.serviceFee) : '') +
+      (fb.paymentFee > 0 ? feeRow('Zahlungsgebühr', '1,5 % + 0,25 € · Stripe', fb.paymentFee) : '') +
+      '<div class="fee-row fee-total"><span class="fee-label">Gesamt</span>' +
+      '<span class="fee-val">' + S.fmtEUR.format(fb.total) + '</span></div>';
     $('checkoutNote').textContent = 'Du wirst zur sicheren Stripe-Bezahlseite weitergeleitet ' +
       '(Kreditkarte, Apple Pay u. a.). Deine Tickets werden sofort nach erfolgreicher Zahlung freigeschaltet.';
     msg($('checkoutMsg'), '');
@@ -414,6 +424,13 @@
         ? '<button class="btn btn-ghost btn-sm" data-pdf="' + esc(o.id) + '">Tickets als PDF</button>'
         : '') +
       '</div>' +
+      (o.status === 'bezahlt' && (o.serviceFee > 0 || o.paymentFee > 0)
+        ? '<div class="fee-breakdown" style="max-width:420px">' +
+          '<div class="fee-row"><span class="fee-label">Ticketpreis</span><span class="fee-val">' + S.fmtEUR.format(o.subtotal) + '</span></div>' +
+          (o.serviceFee > 0 ? '<div class="fee-row"><span class="fee-label">Servicegebühr<span class="fee-sub">3,5 % · Organisation &amp; Abwicklung</span></span><span class="fee-val">' + S.fmtEUR.format(o.serviceFee) + '</span></div>' : '') +
+          (o.paymentFee > 0 ? '<div class="fee-row"><span class="fee-label">Zahlungsgebühr<span class="fee-sub">1,5 % + 0,25 € · Stripe</span></span><span class="fee-val">' + S.fmtEUR.format(o.paymentFee) + '</span></div>' : '') +
+          '<div class="fee-row fee-total"><span class="fee-label">Gesamt</span><span class="fee-val">' + S.fmtEUR.format(o.total) + '</span></div></div>'
+        : '') +
       (o.status === 'offen'
         ? '<p class="hint" style="margin-top:6px">Diese Bestellung wurde nicht bezahlt – einfach die Tickets erneut in den Warenkorb legen und neu bestellen.</p>'
         : o.tickets.map(t => ticketHTML(t, o)).join('')) +

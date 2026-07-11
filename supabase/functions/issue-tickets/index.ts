@@ -87,6 +87,7 @@ Deno.serve(async (req) => {
 
     const { error: oErr } = await admin.from("orders").insert({
       id: orderId, email: recipient, status: "bezahlt", total, paid_via: mode, paid_at: new Date().toISOString(),
+      subtotal: total, service_fee: 0, payment_fee: 0,
     });
     if (oErr) throw oErr;
     await admin.from("order_items").insert({

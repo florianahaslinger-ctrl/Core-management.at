@@ -261,3 +261,13 @@ footer.shop-footer a:hover{color:var(--gold)}
 @media(prefers-reduced-motion:reduce){
   *{animation:none !important;transition:none !important}
 }
+
+/* --- Gebühren-Aufschlüsselung im Checkout / in „Meine Tickets“ --- */
+.fee-breakdown{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.fee-row{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:6px 0}
+.fee-label{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--white);display:flex;flex-direction:column;gap:2px}
+.fee-sub{font-size:11px;color:var(--muted);letter-spacing:.02em}
+.fee-val{font-family:'DM Sans',sans-serif;font-size:15px;color:var(--gold-light);white-space:nowrap}
+.fee-total{margin-top:8px;padding-top:12px;border-top:1px solid var(--line)}
+.fee-total .fee-label{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.04em;color:var(--gold)}
+.fee-total .fee-val{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--gold)}
