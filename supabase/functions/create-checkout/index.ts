@@ -34,12 +34,21 @@ Deno.serve(async (req) => {
     }
     const email = userData.user.email.toLowerCase();
 
-    const { items } = await req.json() as {
+    const { items, return_path } = await req.json() as {
       items: { category_id: string; qty: number; seat_ids?: string[] }[];
+      return_path?: string;
     };
     if (!Array.isArray(items) || !items.length) {
       return json({ error: "Der Warenkorb ist leer." }, 400);
     }
+
+    // Rückkehr-Seite nach der Zahlung: nur bekannte Shop-Seiten erlauben.
+    // "/tickets.html" = klassischer Shop (Standard), "/shop/" = weiße Version.
+    const RETURN_PATHS: Record<string, string> = {
+      "/tickets.html": SHOP_URL + "/tickets.html",
+      "/shop/": SHOP_URL + "/shop/index.html",
+    };
+    const returnUrl = RETURN_PATHS[return_path ?? ""] ?? RETURN_PATHS["/tickets.html"];
 
     // Kategorien + Event + Verfügbarkeit prüfen
     const ids = items.map((i) => i.category_id);
@@ -142,7 +151,7 @@ Deno.serve(async (req) => {
       await admin.from("orders").update({
         status: "bezahlt", paid_via: "gratis", paid_at: new Date().toISOString(),
       }).eq("id", orderId);
-      return json({ url: SHOP_URL + "/tickets.html?order=" + orderId + "&paid=1", order_id: orderId, free: true });
+      return json({ url: returnUrl + "?order=" + orderId + "&paid=1", order_id: orderId, free: true });
     }
 
     // Stripe Checkout Session – bei Sitzplätzen läuft die Session mit der
@@ -152,8 +161,8 @@ Deno.serve(async (req) => {
       `&customer_email=${encodeURIComponent(email)}` +
       `&metadata[order_id]=${orderId}` +
       (allSeatIds.length ? `&expires_at=${Math.floor(Date.now() / 1000) + 30 * 60}` : "") +
-      `&success_url=${encodeURIComponent(SHOP_URL + "/tickets.html?order=" + orderId + "&paid=1")}` +
-      `&cancel_url=${encodeURIComponent(SHOP_URL + "/tickets.html?cancelled=1")}` +
+      `&success_url=${encodeURIComponent(returnUrl + "?order=" + orderId + "&paid=1")}` +
+      `&cancel_url=${encodeURIComponent(returnUrl + "?cancelled=1")}` +
       `&${lineItems.join("&")}`;
     const resp = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",

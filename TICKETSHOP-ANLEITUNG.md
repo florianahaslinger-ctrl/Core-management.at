@@ -6,7 +6,8 @@ Der Ticketshop ist ein vollwertiger Onlineshop mit zentraler Datenbank und echte
 
 | Seite | Zweck |
 |---|---|
-| `tickets.html` | Öffentlicher Shop: Tickets auswählen, Anmeldung per E-Mail-Verifizierung, Online-Zahlung über Stripe, eigene Tickets mit QR-Code ansehen und als PDF laden |
+| `tickets.html` | Öffentlicher Shop (klassisches, dunkles Design): Tickets auswählen, Anmeldung per E-Mail-Verifizierung, Online-Zahlung über Stripe, eigene Tickets mit QR-Code ansehen und als PDF laden |
+| `shop/` | **Weißer Ticketshop** (eigenes Projekt, helles Design im Stil moderner Ticketshops) – funktional identisch mit `tickets.html`, ersetzt ihn aber nicht; beide laufen parallel |
 | `dashboard.html` | Adminbereich: Statistiken & Diagramme, Events & Ticketkategorien verwalten, Bestellungen, Check-in, Admin-Verwaltung |
 
 **Architektur:**
@@ -16,6 +17,26 @@ Der Ticketshop ist ein vollwertiger Onlineshop mit zentraler Datenbank und echte
   Ein **Webhook bestätigt die Zahlung serverseitig** – erst dann werden die Tickets erzeugt und freigeschaltet.
   Fälschen der „Zahlung erfolgreich“-Rückkehr bringt nichts: ohne bestätigte Stripe-Zahlung gibt es keine Tickets.
 - Der geheime Stripe-Schlüssel liegt ausschließlich in den Supabase-Edge-Functions (Server), niemals im öffentlichen Code.
+
+## Weißer Ticketshop (`shop/`)
+
+Der weiße Shop unter **core-management.at/shop/** ist ein eigenständiges Projekt (eigene Dateien:
+`shop/index.html`, `shop/shop.css`, `shop/shop.js`) und kann alles, was der klassische Shop kann –
+gleicher Login, gleiche Events, gleiche Sitzplatzwahl, gleiche Stripe-Zahlung, gleiche Tickets/PDFs.
+Er nutzt dieselbe Datenschicht (`assets/store.js`) und dieselbe Supabase-Datenbank; Bestellungen aus
+beiden Shops landen im selben Dashboard. Der klassische Shop (`tickets.html`) bleibt unverändert online.
+
+Damit die Rückkehr von der Stripe-Bezahlseite wieder im weißen Shop landet, kennt die Edge Function
+`create-checkout` jetzt einen optionalen Rückkehr-Pfad (Whitelist: `/tickets.html` oder `/shop/`;
+ohne Angabe wie bisher `/tickets.html`).
+
+**Nach dem Deployen einmalig prüfen/einrichten:**
+1. Die aktualisierte Edge Function `create-checkout` in Supabase neu deployen
+   (`supabase functions deploy create-checkout`). Bis dahin funktioniert der weiße Shop trotzdem –
+   die Rückkehr nach der Zahlung landet nur auf `tickets.html`; die Tickets sind in beiden Shops sichtbar.
+2. In Supabase unter *Authentication → URL Configuration → Redirect URLs* zusätzlich
+   `https://core-management.at/shop/` und `https://core-management.at/shop/index.html` eintragen,
+   damit der Anmelde-Link aus der E-Mail zurück in den weißen Shop führt.
 
 ## Kaufablauf
 
