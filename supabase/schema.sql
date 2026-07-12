@@ -29,8 +29,8 @@ create table if not exists public.orders (
   status text not null default 'offen' check (status in ('offen','bezahlt','storniert')),
   total numeric(10,2) not null default 0,            -- Gesamtbetrag inkl. Gebühren (an Stripe berechnet)
   subtotal numeric(10,2),                            -- reiner Ticketpreis (ohne Gebühren)
-  service_fee numeric(10,2) not null default 0,      -- Servicegebühr 3,5 % (CORE Management)
-  payment_fee numeric(10,2) not null default 0,      -- Zahlungsgebühr 1,5 % + 0,25 € (Stripe)
+  service_fee numeric(10,2) not null default 0,      -- Servicegebühr 3,5 % + 0,25 € (CORE Management)
+  payment_fee numeric(10,2) not null default 0,      -- Zahlungsgebühr 1,5 % (Stripe)
   paid_via text,
   paid_at timestamptz,
   stripe_session_id text,

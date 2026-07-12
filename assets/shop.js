@@ -280,8 +280,8 @@
       '<span class="fee-val">' + S.fmtEUR.format(val) + '</span></div>';
     $('checkoutBreakdown').innerHTML =
       feeRow('Ticketpreis', '', fb.subtotal) +
-      (fb.serviceFee > 0 ? feeRow('Servicegebühr', '3,5 % · Organisation &amp; Abwicklung', fb.serviceFee) : '') +
-      (fb.paymentFee > 0 ? feeRow('Zahlungsgebühr', '1,5 % + 0,25 € · Stripe', fb.paymentFee) : '') +
+      (fb.serviceFee > 0 ? feeRow('Servicegebühr', '3,5 % + 0,25 € · Organisation &amp; Abwicklung', fb.serviceFee) : '') +
+      (fb.paymentFee > 0 ? feeRow('Zahlungsgebühr', '1,5 % · Stripe', fb.paymentFee) : '') +
       '<div class="fee-row fee-total"><span class="fee-label">Gesamt</span>' +
       '<span class="fee-val">' + S.fmtEUR.format(fb.total) + '</span></div>';
     $('checkoutNote').textContent = 'Du wirst zur sicheren Stripe-Bezahlseite weitergeleitet ' +
@@ -427,8 +427,8 @@
       (o.status === 'bezahlt' && (o.serviceFee > 0 || o.paymentFee > 0)
         ? '<div class="fee-breakdown" style="max-width:420px">' +
           '<div class="fee-row"><span class="fee-label">Ticketpreis</span><span class="fee-val">' + S.fmtEUR.format(o.subtotal) + '</span></div>' +
-          (o.serviceFee > 0 ? '<div class="fee-row"><span class="fee-label">Servicegebühr<span class="fee-sub">3,5 % · Organisation &amp; Abwicklung</span></span><span class="fee-val">' + S.fmtEUR.format(o.serviceFee) + '</span></div>' : '') +
-          (o.paymentFee > 0 ? '<div class="fee-row"><span class="fee-label">Zahlungsgebühr<span class="fee-sub">1,5 % + 0,25 € · Stripe</span></span><span class="fee-val">' + S.fmtEUR.format(o.paymentFee) + '</span></div>' : '') +
+          (o.serviceFee > 0 ? '<div class="fee-row"><span class="fee-label">Servicegebühr<span class="fee-sub">3,5 % + 0,25 € · Organisation &amp; Abwicklung</span></span><span class="fee-val">' + S.fmtEUR.format(o.serviceFee) + '</span></div>' : '') +
+          (o.paymentFee > 0 ? '<div class="fee-row"><span class="fee-label">Zahlungsgebühr<span class="fee-sub">1,5 % · Stripe</span></span><span class="fee-val">' + S.fmtEUR.format(o.paymentFee) + '</span></div>' : '') +
           '<div class="fee-row fee-total"><span class="fee-label">Gesamt</span><span class="fee-val">' + S.fmtEUR.format(o.total) + '</span></div></div>'
         : '') +
       (o.status === 'offen'

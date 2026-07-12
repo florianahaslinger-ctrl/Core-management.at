@@ -83,7 +83,7 @@
     const st = S.stats(orders);
     $('statTiles').innerHTML = [
       ['Ticket-Umsatz', S.fmtEUR.format(st.revenue), st.openCount + ' Bestellung(en) offen/abgebrochen'],
-      ['+ Servicegebühren', S.fmtEUR.format(st.serviceFees), 'eingenommen (3,5 %)'],
+      ['+ Servicegebühren', S.fmtEUR.format(st.serviceFees), 'eingenommen (3,5 % + 0,25 €)'],
       ['Gesamt eingezogen', S.fmtEUR.format(st.collected), 'inkl. ' + S.fmtEUR.format(st.paymentFees) + ' Zahlungsgeb. (Stripe)'],
       ['Verkaufte Tickets', st.ticketCount, 'über ' + st.orderCount + ' Bestellungen'],
       ['Check-ins', st.checkinCount, st.ticketCount ? Math.round(100 * st.checkinCount / st.ticketCount) + ' % eingecheckt' : '–'],
