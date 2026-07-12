@@ -61,7 +61,7 @@
       const subtotalCents = Math.round(Number(subtotal) * 100);
       const paid = subtotalCents > 0;
       const serviceCents = paid ? Math.round(subtotalCents * 0.035) + 25 : 0;
-      const paymentCents = paid ? Math.round(subtotalCents * 0.015) : 0;
+      const paymentCents = paid ? Math.round(subtotalCents * 0.015) + 25 : 0;
       const grandCents = subtotalCents + serviceCents + paymentCents;
       return {
         subtotal: subtotalCents / 100,
