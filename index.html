@@ -111,7 +111,7 @@
   /* PACKAGES */
   .services-section { background: var(--dark); }
   .services-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 60px; }
-  .pkg-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--gray2); }
+  .pkg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1px; background: var(--gray2); }
   .pkg-card { background: var(--dark2); padding: 44px 36px; display: flex; flex-direction: column; gap: 0; position: relative; transition: background 0.3s; }
   .pkg-card:hover { background: #1e1e1e; }
   .pkg-featured { background: var(--black); border-top: 2px solid var(--gold); }
@@ -376,10 +376,29 @@
       <a href="#contact" class="pkg-cta">Paket anfragen →</a>
     </div>
 
+    <!-- TICKETSHOP -->
+    <div class="pkg-card reveal d3">
+      <div class="pkg-header">
+        <div class="pkg-num">04</div>
+        <div class="pkg-badge pkg-badge-gold">Einzeln buchbar</div>
+      </div>
+      <div class="pkg-title">Ticketshop</div>
+      <div class="pkg-desc">Ihr braucht nur den Ticketverkauf? Unser Online-Ticketsystem gibt es auch einzeln – ganz ohne Gesamtpaket. Wir richten euren Shop ein, ihr verkauft, wir liefern die Technik dahinter.</div>
+      <ul class="pkg-features">
+        <li><span class="pkg-check">✦</span>Eigener Online-Ticketshop für euren Ball</li>
+        <li><span class="pkg-check">✦</span>Digitale Tickets mit QR-Code & PDF</li>
+        <li><span class="pkg-check">✦</span>Interaktiver Sitzplan für bestuhlte Bälle</li>
+        <li><span class="pkg-check">✦</span>Sichere Bezahlung per Kreditkarte (Stripe)</li>
+        <li><span class="pkg-check">✦</span>Live-Dashboard mit Einnahmen & Verkäufen</li>
+        <li><span class="pkg-check">✦</span>Einlasskontrolle per QR-Scan am Ballabend</li>
+      </ul>
+      <a href="#contact" class="pkg-cta">Ticketshop anfragen →</a>
+    </div>
+
     <!-- CORE -->
     <div class="pkg-card pkg-core reveal d3">
       <div class="pkg-header">
-        <div class="pkg-num">04</div>
+        <div class="pkg-num">05</div>
         <div class="pkg-badge pkg-badge-dark">Nur auf Anfrage</div>
       </div>
       <div class="pkg-title">Core</div>
@@ -494,7 +513,7 @@
         <div class="fg"><label>Schule</label><input type="text" name="schule" placeholder="BRG Musterstadt"></div>
         <div class="fg"><label>Geplantes Balldatum</label><input type="date" name="datum"></div>
       </div>
-      <div class="fg"><label>Gewünschtes Paket</label><select name="paket"><option value="">Bitte wählen…</option><option>Basic</option><option>Premium</option><option>Core (auf Anfrage)</option><option>OnSite</option><option>Noch unsicher</option></select></div>
+      <div class="fg"><label>Gewünschtes Paket</label><select name="paket"><option value="">Bitte wählen…</option><option>Basic</option><option>Premium</option><option>Core (auf Anfrage)</option><option>OnSite</option><option>Ticketshop (einzeln)</option><option>Noch unsicher</option></select></div>
       <div class="fg"><label>Eure Nachricht</label><textarea name="nachricht" placeholder="Erzählt uns von eurem Ball…"></textarea></div>
       <div id="formMsg" style="display:none;padding:12px 0;font-size:0.85rem;color:var(--gold)"></div>
       <button type="submit" class="submit-btn" id="submitBtn">Anfrage absenden →</button>
