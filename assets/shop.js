@@ -209,20 +209,38 @@
       rows[s.row][s.table].push(s);
     });
 
+    // Einen Tisch als runden Saalplan-Tisch rendern (Plätze im Kreis).
+    function renderTable(t, tableSeats) {
+      const n = tableSeats.length;
+      const seatSize = 30;
+      const R = n <= 1 ? 0 : Math.max(50, (seatSize + 12) / (2 * Math.sin(Math.PI / n)));
+      const D = Math.round(2 * R + seatSize + 26);
+      const c = D / 2;
+      const seatsHtml = tableSeats.map((s, i) => {
+        const ang = (-90 + i * (360 / n)) * Math.PI / 180;
+        const x = Math.round(c + R * Math.cos(ang) - seatSize / 2);
+        const y = Math.round(c + R * Math.sin(ang) - seatSize / 2);
+        const sel = chosen.has(s.id);
+        const cls = s.status !== 'free' ? 'taken' : (sel ? 'sel' : 'free');
+        return '<button type="button" class="seat ' + cls + '" data-id="' + s.id + '"' +
+          (s.status !== 'free' ? ' disabled' : '') +
+          ' style="left:' + x + 'px;top:' + y + 'px" title="' + esc(seatLabel(s)) + '">' + s.seat + '</button>';
+      }).join('');
+      return '<div class="seat-table" style="width:' + D + 'px;height:' + D + 'px">' +
+        '<div class="seat-table-label">Tisch<br>' + esc(t) + '</div>' + seatsHtml + '</div>';
+    }
+
     function render() {
       $('seatCount').textContent = chosen.size + ' / ' + need + ' gewählt';
       $('btnSeatConfirm').disabled = chosen.size !== need;
-      $('seatMapArea').innerHTML = Object.keys(rows).map(r =>
-        '<div class="seat-row"><div class="seat-row-label">Reihe ' + esc(r) + '</div>' +
-        '<div class="seat-tables">' + Object.keys(rows[r]).map(t =>
-          '<div class="seat-table"><div class="seat-table-label">Tisch ' + esc(t) + '</div>' +
-          '<div class="seat-dots">' + rows[r][t].map(s => {
-            const sel = chosen.has(s.id);
-            const cls = s.status !== 'free' ? 'taken' : (sel ? 'sel' : 'free');
-            return '<button type="button" class="seat ' + cls + '" data-id="' + s.id +
-              '" ' + (s.status !== 'free' ? 'disabled' : '') + ' title="' + esc(seatLabel(s)) + '">' + s.seat + '</button>';
-          }).join('') + '</div></div>').join('') +
-        '</div></div>').join('');
+      $('seatMapArea').innerHTML = '<div class="seat-plan">' +
+        '<div class="seat-stage">Bühne · Tanzfläche</div>' +
+        Object.keys(rows).map(r =>
+          '<div class="seat-row"><div class="seat-row-label">Reihe ' + esc(r) + '</div>' +
+          '<div class="seat-tables">' + Object.keys(rows[r]).map(t =>
+            renderTable(t, rows[r][t])
+          ).join('') + '</div></div>').join('') +
+        '</div>';
       $('seatMapArea').querySelectorAll('.seat.free, .seat.sel').forEach(btn => {
         btn.addEventListener('click', () => {
           const id = btn.dataset.id;
