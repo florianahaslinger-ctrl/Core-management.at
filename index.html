@@ -396,6 +396,36 @@
   </div>
 </section>
 
+<!-- SPLIT: Ticketshop (Highlight) -->
+<style>
+  .ticket-highlight { position: relative; border-top: 2px solid var(--gold); border-bottom: 2px solid var(--gold); }
+  .ticket-highlight .split-img { position: relative; }
+  .ticket-highlight .split-img::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent 35%, rgba(8,8,8,0.55) 100%); pointer-events: none; }
+  .ticket-highlight .split-content { background: linear-gradient(135deg, #171310 0%, #1f1810 55%, #261c0c 100%); position: relative; overflow: hidden; }
+  .ticket-highlight .split-content::before { content: ''; position: absolute; top: -35%; right: -15%; width: 65%; height: 130%; background: radial-gradient(closest-side, rgba(201,168,76,0.22), transparent 70%); pointer-events: none; }
+  .ticket-highlight .split-content > * { position: relative; z-index: 1; }
+  .ticket-eyebrow { display: inline-flex; align-items: center; gap: 9px; font-size: 0.6rem; letter-spacing: 0.26em; text-transform: uppercase; color: var(--black); background: var(--gold); padding: 8px 16px; font-weight: 600; width: fit-content; margin-bottom: 24px; box-shadow: 0 6px 22px rgba(201,168,76,0.3); }
+  .ticket-eyebrow::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--black); }
+  .ticket-highlight h2 { font-size: clamp(2.9rem, 6.4vw, 4rem); }
+  .ticket-cta { box-shadow: 0 12px 40px rgba(201,168,76,0.4); font-size: 0.78rem; padding: 18px 44px; }
+  .ticket-cta:hover { box-shadow: 0 16px 52px rgba(201,168,76,0.55); }
+</style>
+<div class="split ticket-highlight">
+  <div class="split-img"><img id="splitTickets" alt="Online-Ticketshop"></div>
+  <div class="split-content">
+    <div class="ticket-eyebrow reveal">Neu · Online-Ticketing</div>
+    <h2 class="reveal d1">Verkauft eure Tickets<br><em>komplett online</em></h2>
+    <p class="reveal d2">Unser eigenes Ticketsystem bringt euren Ballverkauf online – vom ersten Klick bis zum Einlass. Eure Gäste kaufen bequem von zu Hause, ihr behaltet Einnahmen und Auslastung jederzeit im Blick.</p>
+    <div class="features reveal d2">
+      <div class="feature"><div class="feature-dot"></div><span>Digitale Tickets mit QR-Code & PDF zum Ausdrucken</span></div>
+      <div class="feature"><div class="feature-dot"></div><span>Interaktiver Sitzplan für bestuhlte Bälle</span></div>
+      <div class="feature"><div class="feature-dot"></div><span>Sichere Bezahlung per Kreditkarte (Stripe)</span></div>
+      <div class="feature"><div class="feature-dot"></div><span>Live-Dashboard mit Einnahmen & verkauften Tickets</span></div>
+    </div>
+    <a href="tickets.html" class="btn-primary ticket-cta reveal d2" style="margin-top:36px;align-self:flex-start">Zum Ticketshop →</a>
+  </div>
+</div>
+
 <!-- GALLERY -->
 <section class="gallery-section" id="galerie">
   <div class="gallery-header"><div class="section-label reveal">Eindrücke</div><h2 class="reveal d1">Momente, die <em>zählen</em></h2></div>
@@ -439,37 +469,6 @@
   </div>
   <div class="split-img"><img id="splitDisco" alt="Disco"></div>
 </div>
-
-<!-- SPLIT 3: Ticketshop (Highlight) -->
-<style>
-  .ticket-highlight { position: relative; border-top: 2px solid var(--gold); border-bottom: 2px solid var(--gold); }
-  .ticket-highlight .split-img { position: relative; }
-  .ticket-highlight .split-img::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent 35%, rgba(8,8,8,0.55) 100%); pointer-events: none; }
-  .ticket-highlight .split-content { background: linear-gradient(135deg, #171310 0%, #1f1810 55%, #261c0c 100%); position: relative; overflow: hidden; }
-  .ticket-highlight .split-content::before { content: ''; position: absolute; top: -35%; right: -15%; width: 65%; height: 130%; background: radial-gradient(closest-side, rgba(201,168,76,0.22), transparent 70%); pointer-events: none; }
-  .ticket-highlight .split-content > * { position: relative; z-index: 1; }
-  .ticket-eyebrow { display: inline-flex; align-items: center; gap: 9px; font-size: 0.6rem; letter-spacing: 0.26em; text-transform: uppercase; color: var(--black); background: var(--gold); padding: 8px 16px; font-weight: 600; width: fit-content; margin-bottom: 24px; box-shadow: 0 6px 22px rgba(201,168,76,0.3); }
-  .ticket-eyebrow::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--black); }
-  .ticket-highlight h2 { font-size: clamp(2.9rem, 6.4vw, 4rem); }
-  .ticket-cta { box-shadow: 0 12px 40px rgba(201,168,76,0.4); font-size: 0.78rem; padding: 18px 44px; }
-  .ticket-cta:hover { box-shadow: 0 16px 52px rgba(201,168,76,0.55); }
-</style>
-<div class="split ticket-highlight">
-  <div class="split-img"><img id="splitTickets" alt="Online-Ticketshop"></div>
-  <div class="split-content">
-    <div class="ticket-eyebrow reveal">Neu · Online-Ticketing</div>
-    <h2 class="reveal d1">Verkauft eure Tickets<br><em>komplett online</em></h2>
-    <p class="reveal d2">Unser eigenes Ticketsystem bringt euren Ballverkauf online – vom ersten Klick bis zum Einlass. Eure Gäste kaufen bequem von zu Hause, ihr behaltet Einnahmen und Auslastung jederzeit im Blick.</p>
-    <div class="features reveal d2">
-      <div class="feature"><div class="feature-dot"></div><span>Digitale Tickets mit QR-Code & PDF zum Ausdrucken</span></div>
-      <div class="feature"><div class="feature-dot"></div><span>Interaktiver Sitzplan für bestuhlte Bälle</span></div>
-      <div class="feature"><div class="feature-dot"></div><span>Sichere Bezahlung per Kreditkarte (Stripe)</span></div>
-      <div class="feature"><div class="feature-dot"></div><span>Live-Dashboard mit Einnahmen & verkauften Tickets</span></div>
-    </div>
-    <a href="tickets.html" class="btn-primary ticket-cta reveal d2" style="margin-top:36px;align-self:flex-start">Zum Ticketshop →</a>
-  </div>
-</div>
-
 
 <!-- CTA -->
 <div class="cta">
