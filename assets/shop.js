@@ -192,7 +192,13 @@
     try { seats = await S.seatMap(line.ev.id); }
     catch (e) { msg($('checkoutMsg'), 'Sitzplan konnte nicht geladen werden: ' + e.message, 'error'); return; }
     if (!seats.length) {
-      msg($('checkoutMsg'), 'Für „' + line.cat.name + '“ ist noch kein Sitzplan hinterlegt. Bitte an die Veranstalter wenden.', 'error');
+      // Sichtbare Rückmeldung statt „toter" Button: Modal mit Hinweis öffnen.
+      $('seatTitle').textContent = 'Sitzplan nicht verfügbar';
+      $('seatSub').textContent = line.cat.name + ' – ' + line.ev.name;
+      $('seatMapArea').innerHTML = '<p class="sub" style="padding:24px 8px;color:var(--warn)">Für diese Ticketkategorie ist noch kein Sitzplan hinterlegt. Bitte wende dich an die Veranstalter.</p>';
+      $('seatCount').textContent = '';
+      $('btnSeatConfirm').disabled = true;
+      openModal('seatModal');
       return;
     }
     seatById[line.ev.id] = {};
