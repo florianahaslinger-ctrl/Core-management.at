@@ -8,6 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@0,300;0,400;0,500;0,600&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" href="favicon.png">
+<script src="assets/supabase.js"></script>
+<script src="assets/store.js"></script>
 <style>
   :root{
     --black:#080808;--dark:#101010;--panel:#161616;--line:rgba(201,168,76,.18);
@@ -22,7 +24,24 @@
   .top .logo span{color:var(--gold)}
   .top .hint{font-size:.72rem;color:var(--muted);letter-spacing:.05em}
 
-  .app{display:grid;grid-template-columns:1fr 300px;gap:0;height:calc(100vh - 59px)}
+  .subbar{display:flex;align-items:center;gap:10px;padding:11px 26px;border-bottom:1px solid var(--line);background:var(--dark);flex-wrap:wrap}
+  .sb-label{font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gray)}
+  #evSel{background:#0e0e0d;border:1px solid var(--line);color:var(--white);padding:8px 11px;border-radius:6px;font-family:inherit;font-size:.85rem;min-width:220px}
+  .sb-btn{background:var(--panel);border:1px solid var(--line);color:var(--white);padding:8px 14px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;transition:.15s}
+  .sb-btn:hover{border-color:var(--gold);color:var(--gold-light)}
+  .sb-btn.gold{background:var(--gold-grad);color:#181206;border-color:var(--gold);font-weight:600}
+  .sb-btn.ghost{background:transparent}
+  .sb-status{font-size:.8rem;color:var(--gold-light)}
+
+  .overlay{position:fixed;inset:0;z-index:100;background:rgba(6,6,6,.86);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center}
+  .login-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:30px 28px;width:340px;max-width:92vw}
+  .login-card h3{font-family:'Bebas Neue';font-size:1.3rem;letter-spacing:.05em;color:var(--white)}
+  .login-card .lo-sub{font-size:.82rem;color:var(--muted);margin:4px 0 18px}
+  .login-card input{width:100%;background:#0e0e0d;border:1px solid var(--line);color:var(--white);padding:11px 12px;border-radius:7px;font-family:inherit;font-size:.95rem;margin-bottom:10px}
+  .lo-msg{font-size:.82rem;margin-top:10px;min-height:18px}
+  .lo-msg.err{color:#e58b88}.lo-msg.ok{color:var(--gold-light)}
+
+  .app{display:grid;grid-template-columns:1fr 300px;gap:0;height:calc(100vh - 108px)}
   @media(max-width:860px){.app{grid-template-columns:1fr}}
 
   .stage-area{display:flex;flex-direction:column;padding:18px;overflow:hidden}
@@ -96,6 +115,35 @@
 <div class="top">
   <div class="logo">CORE <span>MANAGEMENT</span> · Saalplan-Editor</div>
   <div class="hint">Objekt anklicken zum Bearbeiten · ziehen zum Verschieben</div>
+</div>
+
+<div class="subbar">
+  <label class="sb-label">Event</label>
+  <select id="evSel"><option value="">– lädt …</option></select>
+  <button class="sb-btn" id="btnLoad">Laden</button>
+  <button class="sb-btn gold" id="btnSaveDb">Speichern &amp; Sitzplätze erzeugen</button>
+  <span id="dbStatus" class="sb-status"></span>
+  <span style="flex:1"></span>
+  <button class="sb-btn ghost" id="btnLogout" style="display:none">Abmelden</button>
+</div>
+
+<!-- Login-Overlay -->
+<div id="loginOverlay" class="overlay" style="display:none">
+  <div class="login-card">
+    <div class="logo" style="font-family:'Bebas Neue';font-size:1.4rem;margin-bottom:6px">CORE <span style="color:var(--gold)">MANAGEMENT</span></div>
+    <h3>Admin-Anmeldung</h3>
+    <p class="lo-sub">Nur Veranstalter:innen. Wir senden dir einen Code per E-Mail.</p>
+    <div id="loStep1">
+      <input type="email" id="loEmail" placeholder="office@core-management.at" autocomplete="email">
+      <button class="sb-btn gold" id="loSend" style="width:100%">Code anfordern</button>
+    </div>
+    <div id="loStep2" style="display:none">
+      <input type="text" id="loCode" placeholder="6-stelliger Code" inputmode="numeric">
+      <button class="sb-btn gold" id="loVerify" style="width:100%">Anmelden</button>
+      <button class="sb-btn ghost" id="loBack" style="width:100%;margin-top:6px">Zurück</button>
+    </div>
+    <div id="loMsg" class="lo-msg"></div>
+  </div>
 </div>
 
 <div class="app">
@@ -289,8 +337,7 @@
     return '<div class="count-note">Tische: <b>'+tables.length+'</b> · Sitzplätze gesamt: <b>'+seats+'</b></div>';
   }
   function actions(){
-    return '<div class="bar-actions"><button class="btn gold" id="save">Layout speichern</button>'+
-      '<button class="btn" id="show">Layout-Daten (JSON) anzeigen</button>'+
+    return '<div class="bar-actions"><button class="btn" id="show">Layout-Daten (JSON) anzeigen</button>'+
       '<pre id="out"></pre></div>';
   }
 
@@ -305,7 +352,6 @@
     const del=panel.querySelector('#del'); if(del) del.onclick=()=>{ items=items.filter(x=>x.id!==it.id); selected=null; render(); };
   }
   function bindActions(){
-    const save=panel.querySelector('#save'); if(save) save.onclick=()=>{ localStorage.setItem('cm_saalplan', JSON.stringify(exportLayout())); save.textContent='✓ Gespeichert'; setTimeout(()=>save.textContent='Layout speichern',1400); };
     const show=panel.querySelector('#show'); if(show) show.onclick=()=>{ const o=panel.querySelector('#out'); o.style.display='block'; o.textContent=JSON.stringify(exportLayout(),null,2); };
   }
 
@@ -319,9 +365,22 @@
   function exportLayout(){
     return {
       canvas:{ w:CW, h:CH },
-      tables: items.filter(i=>i.kind==='table').map(t=>({ id:t.id, shape:t.shape, seats:t.seats, x:t.x, y:t.y, label:t.label||'' })),
+      tables: items.filter(i=>i.kind==='table').map((t,idx)=>({ id:t.id, no:idx+1, shape:t.shape, seats:t.seats, x:t.x, y:t.y, label:t.label||'' })),
       zones:  items.filter(i=>i.kind==='zone').map(z=>({ id:z.id, type:z.type, x:z.x, y:z.y, w:z.w, h:z.h, label:z.label||'' })),
     };
+  }
+  function importLayout(layout){
+    items = [];
+    if(layout && Array.isArray(layout.tables)) layout.tables.forEach(t=>{
+      items.push({ id:t.id||nid(), kind:'table', shape:t.shape==='rect'?'rect':'round',
+        seats:Math.max(1,Math.min(20,parseInt(t.seats,10)||8)), x:t.x||40, y:t.y||40, label:t.label||'' });
+    });
+    if(layout && Array.isArray(layout.zones)) layout.zones.forEach(z=>{
+      items.push({ id:z.id||nid(), kind:'zone', type:z.type||'stage', x:z.x||40, y:z.y||40,
+        w:z.w||120, h:z.h||60, label:z.label||'' });
+    });
+    uid = Math.max(uid, 1000);
+    selected = null; render();
   }
 
   /* ---------- Hinzufügen ---------- */
@@ -342,23 +401,86 @@
   // Klick auf leere Fläche → Auswahl aufheben
   canvas.addEventListener('pointerdown', e=>{ if(e.target===canvas){ selected=null; render(); } });
 
-  /* ---------- Demo-Layout ---------- */
-  function demo(){
-    items = [
-      { id:nid(), kind:'zone', type:'stage',      x:390, y:24,  w:320, h:74,  label:'Bühne' },
-      { id:nid(), kind:'zone', type:'dancefloor', x:420, y:150, w:260, h:170, label:'Tanzfläche' },
-      { id:nid(), kind:'zone', type:'bar',        x:900, y:150, w:150, h:60,  label:'Bar' },
-      { id:nid(), kind:'zone', type:'entrance',   x:490, y:640, w:120, h:48,  label:'Eingang' },
-      { id:nid(), kind:'table', shape:'round', seats:8, x:70,  y:150, label:'1' },
-      { id:nid(), kind:'table', shape:'round', seats:8, x:70,  y:380, label:'2' },
-      { id:nid(), kind:'table', shape:'round', seats:10,x:250, y:400, label:'3' },
-      { id:nid(), kind:'table', shape:'rect',  seats:6, x:760, y:360, label:'4' },
-      { id:nid(), kind:'table', shape:'rect',  seats:8, x:520, y:400, label:'5' },
-      { id:nid(), kind:'table', shape:'round', seats:8, x:930, y:300, label:'6' },
-    ];
-    selected=null; render();
+  /* ---------- Supabase-Anbindung ---------- */
+  const S = window.CMStore;
+  const $ = id => document.getElementById(id);
+  let currentEvent = null, events = [];
+
+  function status(msg, kind){ const el=$('dbStatus'); if(!el) return; el.textContent=msg||''; el.style.color = kind==='err'?'#e58b88':'var(--gold-light)'; }
+  function loMsg(msg, kind){ const el=$('loMsg'); if(!el) return; el.textContent=msg||''; el.className='lo-msg '+(kind||''); }
+  function escHtml(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  async function boot(){
+    render();
+    if(!S){ status('Datenschicht nicht geladen.','err'); return; }
+    try { await S.init(); } catch(e){ status('Verbindung fehlgeschlagen: '+e.message,'err'); }
+    if (S.currentUser() && await S.isAdmin()) onAuthed();
+    else $('loginOverlay').style.display='flex';
   }
-  demo();
+  async function onAuthed(){
+    $('loginOverlay').style.display='none';
+    $('btnLogout').style.display='';
+    await loadEvents();
+  }
+  async function loadEvents(){
+    try { events = await S.getEvents(true); }
+    catch(e){ status('Events laden fehlgeschlagen: '+e.message,'err'); return; }
+    const sel=$('evSel');
+    sel.innerHTML = events.length
+      ? events.map(e=>'<option value="'+e.id+'">'+escHtml(e.name)+(e.active?'':' (inaktiv)')+'</option>').join('')
+      : '<option value="">Kein Event vorhanden</option>';
+    if(events.length){ sel.value=events[0].id; await doLoad(); }
+  }
+  async function doLoad(){
+    currentEvent = $('evSel').value;
+    const ev = events.find(e=>e.id===currentEvent);
+    if(!ev) return;
+    const layout = ev.layout;
+    if(layout && (Array.isArray(layout.tables) || Array.isArray(layout.zones))){
+      importLayout(layout);
+      const tc = (layout.tables||[]).length;
+      status('Layout geladen · '+tc+' Tische.');
+    } else {
+      items=[]; selected=null; render();
+      status('Neues, leeres Layout – füge oben Tische & Bereiche hinzu.');
+    }
+  }
+  async function doSave(){
+    if(!currentEvent){ status('Bitte zuerst ein Event wählen.','err'); return; }
+    const layout = exportLayout();
+    const btn=$('btnSaveDb'); btn.disabled=true; status('Speichern …');
+    try {
+      await S.saveLayout(currentEvent, layout);
+      const n = await S.generateSeatsFromLayout(currentEvent, layout.tables);
+      status('✓ Gespeichert · '+layout.tables.length+' Tische · '+n+' Sitzplätze erzeugt.');
+      const ev=events.find(e=>e.id===currentEvent); if(ev) ev.layout=layout;
+    } catch(e){ status('Fehler: '+e.message,'err'); }
+    finally { btn.disabled=false; }
+  }
+
+  // Login
+  $('loSend').onclick = async ()=>{
+    const email=$('loEmail').value.trim();
+    if(!S.validEmail(email)){ loMsg('Bitte eine gültige E-Mail eingeben.','err'); return; }
+    loMsg('Sende Code …');
+    try { await S.requestCode(email); window._loEmail=email; $('loStep1').style.display='none'; $('loStep2').style.display=''; loMsg('Code gesendet – bitte E-Mail prüfen.','ok'); }
+    catch(e){ loMsg(e.message,'err'); }
+  };
+  $('loVerify').onclick = async ()=>{
+    loMsg('Prüfe …');
+    try {
+      await S.verifyCode(window._loEmail, $('loCode').value.trim());
+      if(!(await S.isAdmin())){ loMsg('Diese E-Mail hat keine Admin-Berechtigung.','err'); await S.logout(); return; }
+      loMsg(''); onAuthed();
+    } catch(e){ loMsg(e.message,'err'); }
+  };
+  $('loBack').onclick = ()=>{ $('loStep2').style.display='none'; $('loStep1').style.display=''; loMsg(''); };
+  $('btnLogout').onclick = async ()=>{ await S.logout(); location.reload(); };
+  $('btnLoad').onclick = doLoad;
+  $('btnSaveDb').onclick = doSave;
+  $('evSel').onchange = doLoad;
+
+  boot();
 })();
 </script>
 </body>
