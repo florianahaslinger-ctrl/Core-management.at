@@ -283,6 +283,24 @@ footer.shop-footer a:hover{color:var(--gold)}
   box-shadow:0 0 0 4px rgba(201,168,76,.28),0 8px 20px -6px rgba(201,168,76,.75)}
 .seat-plan .seat.taken{opacity:.45;background:#0b0b0a;color:#3a3a3a;border-color:#222}
 
+/* ---------- Kunden-Saalplan aus dem Layout-Editor ---------- */
+.seat-floor-wrap{position:relative;margin:0 auto;overflow:hidden}
+.seat-floor{position:relative;transform-origin:top left}
+.seat-floor .fl-zone{position:absolute;display:flex;align-items:center;justify-content:center;text-align:center;border-radius:8px;font-size:12px;letter-spacing:.22em;text-transform:uppercase;font-weight:500}
+.seat-floor .fl-zone.stage{color:var(--gold-light);background:linear-gradient(180deg,rgba(201,168,76,.28),rgba(201,168,76,.06));border:1px solid var(--gold);box-shadow:inset 0 -18px 34px -18px rgba(201,168,76,.7)}
+.seat-floor .fl-zone.dancefloor{color:rgba(245,240,235,.5);background:repeating-linear-gradient(45deg,rgba(255,255,255,.04) 0 12px,transparent 12px 24px);border:1px dashed rgba(245,240,235,.22)}
+.seat-floor .fl-zone.bar{color:#cdbd97;background:linear-gradient(180deg,rgba(91,143,217,.12),rgba(91,143,217,.03));border:1px solid rgba(91,143,217,.45)}
+.seat-floor .fl-zone.entrance{color:#a9d4b0;background:linear-gradient(180deg,rgba(79,158,90,.14),rgba(79,158,90,.03));border:1px solid rgba(79,158,90,.5)}
+.seat-floor .fl-table{position:absolute}
+.seat-floor .fl-surface{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;text-align:center;background:radial-gradient(circle at 50% 32%,#221e15,#0e0d0b);border:1px solid var(--line);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;box-shadow:0 12px 28px -14px rgba(0,0,0,.95),inset 0 1px 0 rgba(201,168,76,.14)}
+.seat-floor .fl-table.round .fl-surface{border-radius:50%}
+.seat-floor .fl-table.rect .fl-surface{border-radius:8px}
+.seat-floor .seat{position:absolute;width:26px;height:26px;margin:0;font-weight:500;transition:transform .15s,box-shadow .2s,border-color .2s,background .2s}
+.seat-floor .seat.free{background:#1b1914;border-color:rgba(201,168,76,.4);color:var(--gold-light)}
+.seat-floor .seat.free:hover{border-color:var(--gold);color:#fff;transform:scale(1.16);box-shadow:0 0 0 4px rgba(201,168,76,.14)}
+.seat-floor .seat.sel{transform:scale(1.12);box-shadow:0 0 0 4px rgba(201,168,76,.28),0 8px 20px -6px rgba(201,168,76,.75)}
+.seat-floor .seat.taken{opacity:.4;background:#0b0b0a;color:#3a3a3a;border-color:#222}
+
 @media(max-width:640px){
   .wrap{padding:40px 5vw}
   .shop-nav{flex-wrap:wrap;gap:10px 18px}

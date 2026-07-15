@@ -230,17 +230,73 @@
         '<div class="seat-table-label">Tisch<br>' + esc(t) + '</div>' + seatsHtml + '</div>';
     }
 
+    // Sitz-Lookup nach Tisch/Platz (für den Layout-Saalplan)
+    const seatByTS = {};
+    seats.forEach(s => { seatByTS[s.table + '_' + s.seat] = s; });
+
+    // --- Geometrie (identisch zum Saalplan-Editor) ---
+    const SEAT = 26, OFF = 8;
+    function spRound(n) {
+      const R = n <= 1 ? 0 : Math.max(52, (SEAT + 12) / (2 * Math.sin(Math.PI / n)));
+      const box = Math.round(2 * R + SEAT + 2 * OFF), surface = Math.round(2 * (R - SEAT / 2 - OFF)), c = box / 2, pos = [];
+      for (let i = 0; i < n; i++) { const a = (-90 + i * (360 / n)) * Math.PI / 180; pos.push({ x: c + R * Math.cos(a) - SEAT / 2, y: c + R * Math.sin(a) - SEAT / 2 }); }
+      return { box, surface, surfaceW: surface, surfaceH: surface, pos };
+    }
+    function seatOnRect(d, W, H, pad) {
+      if (d < W) return { x: d, y: -pad }; d -= W;
+      if (d < H) return { x: W + pad, y: d }; d -= H;
+      if (d < W) return { x: W - d, y: H + pad }; d -= W;
+      return { x: -pad, y: H - d };
+    }
+    function spRect(n) {
+      const perSide = Math.ceil(n / 2), W = Math.max(90, perSide * 38), H = 76, pad = SEAT + OFF;
+      const box = Math.max(W, H) + 2 * pad, ox = (box - W) / 2, oy = (box - H) / 2, P = 2 * (W + H), pos = [];
+      for (let i = 0; i < n; i++) { const p = seatOnRect((i + 0.5) / n * P, W, H, pad); pos.push({ x: ox + p.x - SEAT / 2, y: oy + p.y - SEAT / 2 }); }
+      return { box, surfaceW: W, surfaceH: H, pos };
+    }
+    function floorTable(t) {
+      const n = Math.max(1, parseInt(t.seats, 10) || 1);
+      const g = (t.shape === 'rect') ? spRect(n) : spRound(n);
+      const seatsHtml = g.pos.map((p, i) => {
+        const seat = seatByTS[t.no + '_' + (i + 1)];
+        const free = seat && seat.status === 'free';
+        const sel = seat && chosen.has(seat.id);
+        const cls = free ? (sel ? 'sel' : 'free') : 'taken';
+        return '<button type="button" class="seat ' + cls + '"' + (seat ? ' data-id="' + seat.id + '"' : '') +
+          (free ? '' : ' disabled') + ' style="left:' + Math.round(p.x) + 'px;top:' + Math.round(p.y) + 'px"' +
+          ' title="' + esc((t.label ? 'Tisch ' + t.label + ' · ' : '') + 'Platz ' + (i + 1)) + '">' + (i + 1) + '</button>';
+      }).join('');
+      const sw = (t.shape === 'rect') ? g.surfaceW : g.surface, sh = (t.shape === 'rect') ? g.surfaceH : g.surface;
+      return '<div class="fl-table ' + (t.shape === 'rect' ? 'rect' : 'round') + '" style="left:' + t.x + 'px;top:' + t.y + 'px;width:' + g.box + 'px;height:' + g.box + 'px">' +
+        '<div class="fl-surface" style="width:' + sw + 'px;height:' + sh + 'px">' + esc(t.label || '') + '</div>' + seatsHtml + '</div>';
+    }
+    function renderFloor(layout) {
+      const cw = (layout.canvas && layout.canvas.w) || 1600, ch = (layout.canvas && layout.canvas.h) || 1040;
+      const areaW = $('seatMapArea').clientWidth || 700;
+      const scale = Math.min(1, (areaW - 12) / cw);
+      const zones = (layout.zones || []).map(z =>
+        '<div class="fl-zone ' + esc(z.type || 'stage') + '" style="left:' + z.x + 'px;top:' + z.y + 'px;width:' + z.w + 'px;height:' + z.h + 'px">' + esc(z.label || '') + '</div>').join('');
+      const tables = (layout.tables || []).map(floorTable).join('');
+      return '<div class="seat-floor-wrap" style="width:' + Math.round(cw * scale) + 'px;height:' + Math.round(ch * scale) + 'px">' +
+        '<div class="seat-floor" style="width:' + cw + 'px;height:' + ch + 'px;transform:scale(' + scale + ')">' + zones + tables + '</div></div>';
+    }
+
     function render() {
       $('seatCount').textContent = chosen.size + ' / ' + need + ' gewählt';
       $('btnSeatConfirm').disabled = chosen.size !== need;
-      $('seatMapArea').innerHTML = '<div class="seat-plan">' +
-        '<div class="seat-stage">Bühne · Tanzfläche</div>' +
-        Object.keys(rows).map(r =>
-          '<div class="seat-row"><div class="seat-row-label">Reihe ' + esc(r) + '</div>' +
-          '<div class="seat-tables">' + Object.keys(rows[r]).map(t =>
-            renderTable(t, rows[r][t])
-          ).join('') + '</div></div>').join('') +
-        '</div>';
+      const layout = line.ev.layout;
+      if (layout && Array.isArray(layout.tables) && layout.tables.length) {
+        $('seatMapArea').innerHTML = renderFloor(layout);
+      } else {
+        $('seatMapArea').innerHTML = '<div class="seat-plan">' +
+          '<div class="seat-stage">Bühne · Tanzfläche</div>' +
+          Object.keys(rows).map(r =>
+            '<div class="seat-row"><div class="seat-row-label">Reihe ' + esc(r) + '</div>' +
+            '<div class="seat-tables">' + Object.keys(rows[r]).map(t =>
+              renderTable(t, rows[r][t])
+            ).join('') + '</div></div>').join('') +
+          '</div>';
+      }
       $('seatMapArea').querySelectorAll('.seat.free, .seat.sel').forEach(btn => {
         btn.addEventListener('click', () => {
           const id = btn.dataset.id;

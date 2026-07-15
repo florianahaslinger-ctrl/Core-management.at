@@ -271,6 +271,14 @@
     <div id="seatPlanBox" style="margin-top:26px;border-top:1px solid var(--line);padding-top:18px;display:none">
       <label style="margin-top:0">Sitzplan (nur nötig, wenn es eine Sitzkarte gibt)</label>
       <p class="hint" id="seatPlanInfo" style="margin-bottom:10px"></p>
+
+      <div style="background:var(--dark2,#181818);border:1px solid var(--gold);border-radius:8px;padding:14px 16px;margin-bottom:16px">
+        <div style="font-weight:600;color:var(--gold-light);margin-bottom:4px">🎨 Grafischer Saalplan-Editor</div>
+        <p class="hint" style="margin:0 0 10px">Tische frei platzieren &amp; verschieben, Form (rund/eckig) wählen, Bühne, Tanzfläche, Bar und Eingang setzen. Erzeugt die buchbaren Sitzplätze automatisch.</p>
+        <a href="saalplan-editor.html" target="_blank" rel="noopener" class="btn btn-gold btn-sm" style="text-decoration:none;display:inline-block">Saalplan-Editor öffnen →</a>
+      </div>
+
+      <p class="hint" style="margin-bottom:8px">Oder einfacher Raster-Plan (Reihen × Tische):</p>
       <div class="field-row">
         <div><label>Reihen</label><input type="number" id="spRows" min="1" max="50" value="5"></div>
         <div><label>Tische pro Reihe</label><input type="number" id="spTables" min="1" max="50" value="10"></div>
