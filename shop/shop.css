@@ -175,6 +175,8 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--ink);
 .seat-legend i.seat{width:16px;height:16px;pointer-events:none}
 .seat-map{max-height:52vh;overflow:auto;padding:4px;border:1px solid var(--line);
   border-radius:10px;background:#fafaf7}
+#seatModal .modal{max-width:min(97vw,1400px);width:100%;max-height:94vh;display:flex;flex-direction:column}
+#seatModal .seat-map{max-height:none;flex:1 1 auto;min-height:260px}
 .seat-row{padding:10px 4px;border-bottom:1px dashed var(--line)}
 .seat-row:last-child{border-bottom:none}
 .seat-row-label{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;

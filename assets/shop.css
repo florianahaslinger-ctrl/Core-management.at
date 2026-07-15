@@ -230,6 +230,9 @@ footer.shop-footer a:hover{color:var(--gold)}
 .seat-legend span{display:inline-flex;align-items:center;gap:6px}
 .seat-legend i.seat{width:16px;height:16px;pointer-events:none}
 .seat-map{max-height:52vh;overflow:auto;padding:4px;border:1px solid var(--line);border-radius:6px;background:#0c0c0b}
+/* Sitzplan-Modal möglichst groß, damit der Saalplan gut sichtbar ist */
+#seatModal .modal{max-width:min(97vw,1500px);width:100%;max-height:94vh;display:flex;flex-direction:column}
+#seatModal .seat-map{max-height:none;flex:1 1 auto;min-height:260px}
 .seat-row{padding:10px 4px;border-bottom:1px dashed rgba(201,168,76,.12)}
 .seat-row:last-child{border-bottom:none}
 .seat-row-label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gray);margin-bottom:8px}
