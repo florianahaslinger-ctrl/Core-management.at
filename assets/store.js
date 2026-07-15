@@ -88,7 +88,7 @@
     /* --- Events & Verfügbarkeit --- */
     async getEvents(includeInactive) {
       let q = sb.from('events')
-        .select('id,name,date,location,description,active,categories(id,name,price,quota,max_per_order,description,active,sort,seating)')
+        .select('id,name,date,location,description,active,layout,categories(id,name,price,quota,max_per_order,description,active,sort,seating)')
         .order('date', { ascending: true });
       const { data, error } = await q;
       if (error) throw new Error(error.message);
@@ -99,7 +99,7 @@
         .filter(e => includeInactive || e.active)
         .map(e => ({
           id: e.id, name: e.name, date: e.date, location: e.location,
-          description: e.description, active: e.active,
+          description: e.description, active: e.active, layout: e.layout || null,
           categories: (e.categories || [])
             .sort((a, b) => (a.sort || 0) - (b.sort || 0))
             .map(c => ({
@@ -158,6 +158,36 @@
       if (map.some(s => s.status === 'sold')) throw new Error('Es sind bereits Sitzplätze verkauft – Plan kann nicht geleert werden.');
       const { error } = await sb.from('seats').delete().eq('event_id', eventId);
       if (error) throw new Error(error.message);
+    },
+
+    /* --- Saalplan-Layout (grafischer Editor) --- */
+    async getLayout(eventId) {
+      const { data, error } = await sb.from('events').select('layout').eq('id', eventId).maybeSingle();
+      if (error) throw new Error(error.message);
+      return data ? data.layout : null;
+    },
+    async saveLayout(eventId, layout) {
+      const { error } = await sb.from('events').update({ layout }).eq('id', eventId);
+      if (error) throw new Error(error.message);
+    },
+    // Erzeugt die buchbaren Sitzplätze aus den Tischen des Layouts.
+    // tables: [{ no, seats }]. Schützt bereits verkaufte Pläne.
+    async generateSeatsFromLayout(eventId, tables) {
+      const map = await this.seatMap(eventId);
+      if (map.some(s => s.status === 'sold'))
+        throw new Error('Es sind bereits Sitzplätze verkauft – die Plätze können nicht neu erzeugt werden. Bitte zuerst die Verkäufe klären.');
+      const { error: delErr } = await sb.from('seats').delete().eq('event_id', eventId);
+      if (delErr) throw new Error(delErr.message);
+      const rows = [];
+      (tables || []).forEach(t => {
+        const n = Math.max(0, parseInt(t.seats, 10) || 0);
+        for (let s = 1; s <= n; s++) rows.push({ event_id: eventId, row_no: 1, table_no: t.no, seat_no: s });
+      });
+      for (let i = 0; i < rows.length; i += 500) {
+        const { error } = await sb.from('seats').insert(rows.slice(i, i + 500));
+        if (error) throw new Error(error.message);
+      }
+      return rows.length;
     },
 
     /* --- Checkout (Stripe) --- */
