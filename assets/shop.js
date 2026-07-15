@@ -260,7 +260,11 @@
       for (let i = 0; i < n; i++) { const p = seatOnRect((i + 0.5) / n * P, W, H, pad); pos.push({ x: ox + p.x - SEAT / 2, y: oy + p.y - SEAT / 2 }); }
       return { box, surfaceW: W, surfaceH: H, pos };
     }
-    function floorTable(t) {
+    function tableBox(t) {
+      const n = Math.max(1, parseInt(t.seats, 10) || 1);
+      return (t.shape === 'rect') ? spRect(n).box : spRound(n).box;
+    }
+    function floorTable(t, left, top) {
       const n = Math.max(1, parseInt(t.seats, 10) || 1);
       const g = (t.shape === 'rect') ? spRect(n) : spRound(n);
       const seatsHtml = g.pos.map((p, i) => {
@@ -273,18 +277,27 @@
           ' title="' + esc((t.label ? 'Tisch ' + t.label + ' · ' : '') + 'Platz ' + (i + 1)) + '">' + (i + 1) + '</button>';
       }).join('');
       const sw = (t.shape === 'rect') ? g.surfaceW : g.surface, sh = (t.shape === 'rect') ? g.surfaceH : g.surface;
-      return '<div class="fl-table ' + (t.shape === 'rect' ? 'rect' : 'round') + '" style="left:' + t.x + 'px;top:' + t.y + 'px;width:' + g.box + 'px;height:' + g.box + 'px">' +
+      return '<div class="fl-table ' + (t.shape === 'rect' ? 'rect' : 'round') + '" style="left:' + Math.round(left) + 'px;top:' + Math.round(top) + 'px;width:' + g.box + 'px;height:' + g.box + 'px">' +
         '<div class="fl-surface" style="width:' + sw + 'px;height:' + sh + 'px">' + esc(t.label || '') + '</div>' + seatsHtml + '</div>';
     }
     function renderFloor(layout) {
-      const cw = (layout.canvas && layout.canvas.w) || 1600, ch = (layout.canvas && layout.canvas.h) || 1040;
-      const areaW = $('seatMapArea').clientWidth || 700;
-      const scale = Math.min(1, (areaW - 12) / cw);
-      const zones = (layout.zones || []).map(z =>
-        '<div class="fl-zone ' + esc(z.type || 'stage') + '" style="left:' + z.x + 'px;top:' + z.y + 'px;width:' + z.w + 'px;height:' + z.h + 'px">' + esc(z.label || '') + '</div>').join('');
-      const tables = (layout.tables || []).map(floorTable).join('');
+      const tables = (layout.tables || []), zones = (layout.zones || []);
+      // Auf den tatsächlich genutzten Bereich zoomen (statt der ganzen Editor-Fläche)
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      tables.forEach(t => { const bx = tableBox(t); minX = Math.min(minX, t.x); minY = Math.min(minY, t.y); maxX = Math.max(maxX, t.x + bx); maxY = Math.max(maxY, t.y + bx); });
+      zones.forEach(z => { minX = Math.min(minX, z.x); minY = Math.min(minY, z.y); maxX = Math.max(maxX, z.x + z.w); maxY = Math.max(maxY, z.y + z.h); });
+      if (!isFinite(minX)) { minX = 0; minY = 0; maxX = (layout.canvas && layout.canvas.w) || 1600; maxY = (layout.canvas && layout.canvas.h) || 1040; }
+      const pad = 28; minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+      const cw = maxX - minX, ch = maxY - minY;
+      const areaW = $('seatMapArea').clientWidth || 900;
+      const maxH = Math.round((window.innerHeight || 800) * 0.72);
+      let scale = Math.min(areaW / cw, maxH / ch);
+      scale = Math.max(0.3, Math.min(scale, 1.8));
+      const zonesHtml = zones.map(z =>
+        '<div class="fl-zone ' + esc(z.type || 'stage') + '" style="left:' + Math.round(z.x - minX) + 'px;top:' + Math.round(z.y - minY) + 'px;width:' + z.w + 'px;height:' + z.h + 'px">' + esc(z.label || '') + '</div>').join('');
+      const tablesHtml = tables.map(t => floorTable(t, t.x - minX, t.y - minY)).join('');
       return '<div class="seat-floor-wrap" style="width:' + Math.round(cw * scale) + 'px;height:' + Math.round(ch * scale) + 'px">' +
-        '<div class="seat-floor" style="width:' + cw + 'px;height:' + ch + 'px;transform:scale(' + scale + ')">' + zones + tables + '</div></div>';
+        '<div class="seat-floor" style="width:' + cw + 'px;height:' + ch + 'px;transform:scale(' + scale + ')">' + zonesHtml + tablesHtml + '</div></div>';
     }
 
     function render() {
@@ -312,13 +325,13 @@
         });
       });
     }
-    render();
     $('btnSeatConfirm').onclick = () => {
       if (chosen.size !== need) return;
       doneCb(Array.from(chosen));
       closeModal('seatModal');
     };
     openModal('seatModal');
+    render();
   }
 
   /* ---------- Checkout (Stripe) ---------- */
