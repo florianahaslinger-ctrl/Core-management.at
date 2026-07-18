@@ -88,7 +88,7 @@
     /* --- Events & Verfügbarkeit --- */
     async getEvents(includeInactive) {
       let q = sb.from('events')
-        .select('id,name,date,location,description,active,layout,categories(id,name,price,quota,max_per_order,description,active,sort,seating)')
+        .select('id,name,date,location,description,active,layout,owner_email,categories(id,name,price,quota,max_per_order,description,active,sort,seating)')
         .order('date', { ascending: true });
       const { data, error } = await q;
       if (error) throw new Error(error.message);
@@ -100,6 +100,7 @@
         .map(e => ({
           id: e.id, name: e.name, date: e.date, location: e.location,
           description: e.description, active: e.active, layout: e.layout || null,
+          ownerEmail: e.owner_email || null,
           categories: (e.categories || [])
             .sort((a, b) => (a.sort || 0) - (b.sort || 0))
             .map(c => ({
@@ -244,6 +245,45 @@
       return !!data;
     },
 
+    /* --- Rollen & Mandanten (Multi-Veranstalter) --- */
+    async currentRole() {
+      const email = this.currentUser();
+      if (!email) return null;
+      const { data } = await sb.from('admins').select('role').eq('email', email).maybeSingle();
+      return data ? data.role : null;
+    },
+    async isSuperAdmin() { return (await this.currentRole()) === 'super_admin'; },
+
+    // Events, die der aktuelle Nutzer verwalten darf (Head-Admin: alle; Veranstalter: eigene)
+    async getManagedEvents(includeInactive) {
+      const role = await this.currentRole();
+      const evs = await this.getEvents(includeInactive);
+      if (role === 'super_admin') return evs;
+      const me = this.currentUser();
+      return evs.filter(e => e.ownerEmail === me);
+    },
+
+    // Veranstalter-Verwaltung (nur Head-Admin)
+    async getOrganizers() {
+      const { data, error } = await sb.from('admins').select('email,role').order('email');
+      if (error) throw new Error(error.message);
+      return (data || []);
+    },
+    async addOrganizer(email) {
+      email = normEmail(email);
+      if (!validEmail(email)) throw new Error('Bitte eine gültige E-Mail-Adresse eingeben.');
+      const { error } = await sb.from('admins').insert({ email, role: 'organizer' });
+      if (error) throw new Error(error.message);
+    },
+    async removeOrganizer(email) {
+      const { error } = await sb.from('admins').delete().eq('email', normEmail(email));
+      if (error) throw new Error(error.message);
+    },
+    async setEventOwner(eventId, ownerEmail) {
+      const { error } = await sb.from('events').update({ owner_email: ownerEmail ? normEmail(ownerEmail) : null }).eq('id', eventId);
+      if (error) throw new Error(error.message);
+    },
+
     async allOrders() {
       const { data, error } = await sb.from('orders').select(ORDER_SELECT)
         .order('created_at', { ascending: false });
@@ -294,6 +334,8 @@
         name: ev.name, date: ev.date || null, location: ev.location || null,
         description: ev.description || null, active: !!ev.active
       };
+      // Besitzer nur setzen, wenn explizit übergeben (sonst bestehenden nicht überschreiben)
+      if (ev.ownerEmail !== undefined) row.owner_email = ev.ownerEmail ? normEmail(ev.ownerEmail) : null;
       let eventId = ev.id;
       if (eventId) {
         const { error } = await sb.from('events').update(row).eq('id', eventId);
