@@ -8,6 +8,8 @@
 
   let orders = [];   // Cache aller Bestellungen
   let events = [];   // Cache aller Events (inkl. inaktive)
+  let myRole = null; // 'super_admin' | 'organizer'
+  let mySuper = false;
   let gateEmail = '';
 
   function esc(s) {
@@ -65,6 +67,15 @@
     $('dash').style.display = '';
     $('adminLogout').style.display = '';
     $('adminLogout').textContent = user + ' · Abmelden';
+    // Rolle bestimmen und Head-Admin-only-Bereiche ein-/ausblenden
+    myRole = await S.currentRole();
+    mySuper = myRole === 'super_admin';
+    if (!document.getElementById('roleStyle')) {
+      const st = document.createElement('style'); st.id = 'roleStyle';
+      st.textContent = 'body:not(.is-super) .super-only{display:none !important}';
+      document.head.appendChild(st);
+    }
+    document.body.classList.toggle('is-super', mySuper);
     await renderAll();
   }
 
@@ -206,6 +217,8 @@
       ev.categories.map(c => '<tr><td>' + esc(c.name) + '</td><td>' + S.fmtEUR.format(c.price) + '</td><td>' + c.quota +
         '</td><td>' + c.sold + '</td><td>' + (c.active ? 'aktiv' : 'inaktiv') + '</td></tr>').join('') +
       '</table></div>' +
+      '<div class="hint" style="margin-top:10px">Shop-Link: <a href="tickets.html?event=' + ev.id + '" target="_blank" rel="noopener">tickets.html?event=' + ev.id + '</a>' +
+        (mySuper ? ' · Veranstalter: ' + (ev.ownerEmail ? esc(ev.ownerEmail) : '— (CORE)') : '') + '</div>' +
       '<div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">' +
       '<button class="btn btn-ghost btn-sm" data-edit="' + ev.id + '">Bearbeiten</button>' +
       '<button class="btn btn-ghost btn-sm" data-toggle="' + ev.id + '">' + (ev.active ? 'Deaktivieren' : 'Aktivieren') + '</button>' +
@@ -258,6 +271,22 @@
     $('evLocation').value = ev ? (ev.location || '') : '';
     $('evDesc').value = ev ? (ev.description || '') : '';
     $('evActive').checked = ev ? !!ev.active : true;
+    // Veranstalter-Zuweisung (nur Head-Admin)
+    if (mySuper) {
+      S.getOrganizers().then(list => {
+        const orgs = list.filter(a => a.role === 'organizer');
+        $('evOwner').innerHTML = '<option value="">— Head-Admin (CORE) —</option>' +
+          orgs.map(o => '<option value="' + esc(o.email) + '">' + esc(o.email) + '</option>').join('');
+        $('evOwner').value = ev && ev.ownerEmail ? ev.ownerEmail : '';
+      }).catch(() => {});
+    }
+    // Shop-Link (nur bestehende Events)
+    const shopBox = $('evShopLink');
+    if (ev) {
+      const url = location.origin + '/tickets.html?event=' + ev.id;
+      $('evShopUrl').value = url; $('evShopOpen').href = url;
+      shopBox.style.display = '';
+    } else { shopBox.style.display = 'none'; }
     $('catEditor').innerHTML = (ev && ev.categories.length ? ev.categories : [null]).map(catRowHTML).join('');
     bindCatRemove();
     msg($('evMsg'), '');
@@ -607,17 +636,20 @@
 
   /* ================= Admins ================= */
   async function renderAdmins() {
+    if (!mySuper) { $('adminList').innerHTML = ''; return; }
     try {
-      const admins = await S.getAdmins();
+      const list = await S.getOrganizers(); // [{email, role}]
       const me = S.currentUser();
-      $('adminList').innerHTML = admins.map(a =>
+      $('adminList').innerHTML = list.map(a =>
         '<div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">' +
-        '<span style="flex:1">' + esc(a) + (a === me ? ' <span class="hint">(du)</span>' : '') + '</span>' +
-        (a !== me ? '<button class="btn btn-danger btn-sm" data-rm="' + esc(a) + '">Entfernen</button>' : '') +
+        '<span style="flex:1">' + esc(a.email) + (a.email === me ? ' <span class="hint">(du)</span>' : '') +
+          ' <span class="badge ' + (a.role === 'super_admin' ? 'bezahlt' : 'offen') + '" style="margin-left:6px">' +
+          (a.role === 'super_admin' ? 'Head-Admin' : 'Veranstalter') + '</span></span>' +
+        (a.email !== me && a.role !== 'super_admin' ? '<button class="btn btn-danger btn-sm" data-rm="' + esc(a.email) + '">Entfernen</button>' : '') +
         '</div>').join('');
       $('adminList').querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', async () => {
-        if (confirm(b.dataset.rm + ' als Admin entfernen?')) {
-          try { await S.removeAdmin(b.dataset.rm); await renderAdmins(); }
+        if (confirm(b.dataset.rm + ' als Veranstalter entfernen?')) {
+          try { await S.removeOrganizer(b.dataset.rm); await renderAdmins(); }
           catch (e) { msg($('adminMsg'), e.message, 'error'); }
         }
       }));
@@ -628,7 +660,7 @@
 
   /* ================= Gesamt-Render ================= */
   async function renderAll() {
-    [orders, events] = await Promise.all([S.allOrders(), S.getEvents(true)]);
+    [orders, events] = await Promise.all([S.allOrders(), S.getManagedEvents(true)]);
     renderStats();
     chartSales();
     chartRevenue();
@@ -698,11 +730,17 @@
   });
   $('btnAddAdmin').addEventListener('click', async () => {
     try {
-      await S.addAdmin($('newAdminEmail').value);
+      await S.addOrganizer($('newAdminEmail').value);
       $('newAdminEmail').value = '';
-      msg($('adminMsg'), 'Admin hinzugefügt.', 'ok');
+      msg($('adminMsg'), 'Veranstalter hinzugefügt. Weise ihm nun beim Event unter „Bearbeiten → Veranstalter" einen Ball zu.', 'ok');
       renderAdmins();
     } catch (e) { msg($('adminMsg'), e.message, 'error'); }
+  });
+  $('btnCopyShop').addEventListener('click', () => {
+    const inp = $('evShopUrl'); inp.select();
+    const done = () => { $('btnCopyShop').textContent = '✓ Kopiert'; setTimeout(() => $('btnCopyShop').textContent = 'Kopieren', 1200); };
+    if (navigator.clipboard) navigator.clipboard.writeText(inp.value).then(done).catch(() => { document.execCommand('copy'); done(); });
+    else { document.execCommand('copy'); done(); }
   });
   $('btnSaveEvent').addEventListener('click', async () => {
     const cats = Array.from($('catEditor').querySelectorAll('.admin-cat')).map(row => ({
@@ -727,6 +765,9 @@
       active: $('evActive').checked,
       categories: cats
     };
+    // Besitzer/Veranstalter zuweisen
+    if (mySuper) ev.ownerEmail = $('evOwner').value || null;
+    else if (!ev.id) ev.ownerEmail = S.currentUser(); // Veranstalter legt eigenen Ball an
     if (!ev.name) { msg($('evMsg'), 'Bitte einen Eventnamen eingeben.', 'error'); return; }
     if (!cats.length) { msg($('evMsg'), 'Bitte mindestens eine Ticketkategorie anlegen.', 'error'); return; }
     try {

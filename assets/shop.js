@@ -56,6 +56,9 @@
     const box = $('eventList');
     try {
       eventsCache = await S.getEvents();
+      // Pro-Ball-Shop: mit ?event=ID nur diesen Ball zeigen
+      const evParam = new URLSearchParams(location.search).get('event');
+      if (evParam) eventsCache = eventsCache.filter(e => e.id === evParam);
     } catch (e) {
       box.innerHTML = '<div class="card"><h2>Shop derzeit nicht erreichbar</h2><p class="sub">' + esc(e.message) + '</p></div>';
       return;

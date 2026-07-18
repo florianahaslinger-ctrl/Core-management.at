@@ -65,6 +65,7 @@ Deno.serve(async (req) => {
     const orderItems: Record<string, unknown>[] = [];
     const lineItems: string[] = [];
     const allSeatIds: string[] = [];
+    const eventIds = new Set<string>();
     let li = 0;
     for (const it of items) {
       const cat = (cats ?? []).find((c) => c.id === it.category_id);
@@ -88,6 +89,7 @@ Deno.serve(async (req) => {
         }
         allSeatIds.push(...seatIds);
       }
+      eventIds.add(cat.event_id as string);
       total += Number(cat.price) * qty;
       orderItems.push({
         category_id: cat.id, event_name: ev.name, category_name: cat.name, price: cat.price, qty,
@@ -104,9 +106,15 @@ Deno.serve(async (req) => {
       li++;
     }
 
+    // Mandanten-Regel: eine Bestellung gehört zu genau einem Ball (für getrennte Auszahlungen)
+    if (eventIds.size !== 1) {
+      return json({ error: "Bitte pro Bestellung nur Tickets eines Balls auswählen." }, 400);
+    }
+    const eventId = [...eventIds][0];
+
     // Bestellung anlegen (offen)
     const orderId = "B" + Date.now().toString().slice(-8);
-    const { error: oErr } = await admin.from("orders").insert({ id: orderId, email, total, status: "offen" });
+    const { error: oErr } = await admin.from("orders").insert({ id: orderId, email, total, status: "offen", event_id: eventId });
     if (oErr) throw oErr;
     const { error: iErr } = await admin.from("order_items").insert(
       orderItems.map((x) => ({

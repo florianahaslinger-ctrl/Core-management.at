@@ -58,6 +58,8 @@
     const box = $('eventList');
     try {
       eventsCache = await S.getEvents();
+      const evParam = new URLSearchParams(location.search).get('event');
+      if (evParam) eventsCache = eventsCache.filter(e => e.id === evParam);
     } catch (e) {
       box.innerHTML = '<div class="card"><h2>Shop derzeit nicht erreichbar</h2><p class="sub">' + esc(e.message) + '</p></div>';
       return;
