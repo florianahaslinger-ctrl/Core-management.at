@@ -61,7 +61,8 @@ Deno.serve(async (req) => {
     const { data: sold } = await admin.from("category_sold").select("category_id,sold").in("category_id", ids);
     const soldMap = new Map((sold ?? []).map((s) => [s.category_id, s.sold]));
 
-    let total = 0;
+    let subtotal = 0;
+    let totalTickets = 0;
     const orderItems: Record<string, unknown>[] = [];
     const lineItems: string[] = [];
     const allSeatIds: string[] = [];
@@ -90,7 +91,8 @@ Deno.serve(async (req) => {
         allSeatIds.push(...seatIds);
       }
       eventIds.add(cat.event_id as string);
-      total += Number(cat.price) * qty;
+      subtotal += Number(cat.price) * qty;
+      totalTickets += qty;
       orderItems.push({
         category_id: cat.id, event_name: ev.name, category_name: cat.name, price: cat.price, qty,
         _seating: !!cat.seating, _seatIds: cat.seating ? (it.seat_ids ?? []) : [],
@@ -112,9 +114,26 @@ Deno.serve(async (req) => {
     }
     const eventId = [...eventIds][0];
 
+    // Gebühren: Servicegebühr (CORE) 3,5 % + 0,25 €/Ticket · Zahlungsgebühr (Stripe) 1,5 % + 0,25 €/Ticket
+    const serviceFee = subtotal > 0 ? Math.round((0.035 * subtotal + 0.25 * totalTickets) * 100) / 100 : 0;
+    const paymentFee = subtotal > 0 ? Math.round((0.015 * subtotal + 0.25 * totalTickets) * 100) / 100 : 0;
+    const total = Math.round((subtotal + serviceFee + paymentFee) * 100) / 100;
+    // Gebühren als eigene Positionen in der Stripe-Zahlung
+    if (serviceFee > 0) {
+      lineItems.push(`line_items[${li}][price_data][currency]=eur&line_items[${li}][price_data][product_data][name]=${encodeURIComponent("Servicegebühr")}&line_items[${li}][price_data][unit_amount]=${Math.round(serviceFee * 100)}&line_items[${li}][quantity]=1`);
+      li++;
+    }
+    if (paymentFee > 0) {
+      lineItems.push(`line_items[${li}][price_data][currency]=eur&line_items[${li}][price_data][product_data][name]=${encodeURIComponent("Zahlungsgebühr")}&line_items[${li}][price_data][unit_amount]=${Math.round(paymentFee * 100)}&line_items[${li}][quantity]=1`);
+      li++;
+    }
+
     // Bestellung anlegen (offen)
     const orderId = "B" + Date.now().toString().slice(-8);
-    const { error: oErr } = await admin.from("orders").insert({ id: orderId, email, total, status: "offen", event_id: eventId });
+    const { error: oErr } = await admin.from("orders").insert({
+      id: orderId, email, subtotal, service_fee: serviceFee, payment_fee: paymentFee, total,
+      status: "offen", event_id: eventId,
+    });
     if (oErr) throw oErr;
     const { error: iErr } = await admin.from("order_items").insert(
       orderItems.map((x) => ({
@@ -162,12 +181,32 @@ Deno.serve(async (req) => {
       return json({ url: returnUrl + "?order=" + orderId + "&paid=1", order_id: orderId, free: true });
     }
 
+    // Auszahlungskonto des Veranstalters ermitteln (Stripe Connect).
+    // Bei zugewiesenem Veranstalter läuft die Zahlung auf dessen Konto,
+    // deine Gebühr (Service + Zahlung) bleibt als application_fee bei CORE.
+    // Ohne Veranstalter (CORE-eigenes Event) läuft alles wie bisher aufs Plattform-Konto.
+    const { data: evRow } = await admin.from("events").select("owner_email").eq("id", eventId).maybeSingle();
+    let connect = "";
+    if (evRow?.owner_email) {
+      const { data: owner } = await admin.from("admins")
+        .select("stripe_account_id,stripe_charges_enabled").eq("email", evRow.owner_email).maybeSingle();
+      if (!owner?.stripe_account_id || !owner.stripe_charges_enabled) {
+        await admin.from("orders").delete().eq("id", orderId);
+        if (allSeatIds.length) await admin.from("seat_holds").delete().eq("order_id", orderId);
+        return json({ error: "Der Veranstalter hat die Zahlungsabwicklung noch nicht eingerichtet. Bitte später erneut versuchen." }, 409);
+      }
+      const feeCents = Math.round((serviceFee + paymentFee) * 100);
+      connect = `&payment_intent_data[application_fee_amount]=${feeCents}` +
+        `&payment_intent_data[transfer_data][destination]=${owner.stripe_account_id}`;
+    }
+
     // Stripe Checkout Session – bei Sitzplätzen läuft die Session mit der
     // 30-Minuten-Reservierung ab, damit keine Doppelbelegung entstehen kann.
     const body =
       `mode=payment&client_reference_id=${orderId}` +
       `&customer_email=${encodeURIComponent(email)}` +
       `&metadata[order_id]=${orderId}` +
+      connect +
       (allSeatIds.length ? `&expires_at=${Math.floor(Date.now() / 1000) + 30 * 60}` : "") +
       `&success_url=${encodeURIComponent(returnUrl + "?order=" + orderId + "&paid=1")}` +
       `&cancel_url=${encodeURIComponent(returnUrl + "?cancelled=1")}` +

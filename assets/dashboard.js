@@ -658,6 +658,37 @@
     }
   }
 
+  /* ================= Stripe Connect (Auszahlung) ================= */
+  async function renderConnect() {
+    const body = $('connectBody');
+    if (!body) return;
+    if (mySuper) {
+      body.innerHTML = '<p class="sub">Du bist Head-Admin. Zahlungen für CORE-eigene Bälle laufen direkt über das Plattform-Konto. ' +
+        'Zugewiesene Veranstalter verbinden ihr eigenes Auszahlungskonto hier selbst – ihre Einnahmen fließen direkt an sie, deine Gebühr (3,5 % + 0,25 €/Ticket) bleibt automatisch bei CORE.</p>';
+      return;
+    }
+    body.innerHTML = '<p class="sub">Status wird geprüft …</p>';
+    try {
+      const st = await S.connectStatus();
+      if (st.chargesEnabled) {
+        body.innerHTML = '<p class="sub" style="color:var(--gold-light)">✓ Dein Stripe-Konto ist verbunden. Die Ticket-Einnahmen deiner Bälle werden direkt an dich ausgezahlt (abzüglich Service- & Zahlungsgebühr).</p>';
+      } else {
+        body.innerHTML = '<p class="sub">' + (st.hasAccount
+          ? 'Dein Stripe-Konto ist angelegt, aber die Einrichtung ist noch nicht abgeschlossen. Ohne abgeschlossene Einrichtung kann dein Ball keine Tickets verkaufen.'
+          : 'Verbinde dein Stripe-Konto, damit die Ticket-Einnahmen deiner Bälle direkt an dich ausgezahlt werden. Erst danach kann dein Ball Tickets verkaufen.') +
+          '</p><button class="btn btn-gold btn-sm" id="btnConnect">' + (st.hasAccount ? 'Einrichtung fortsetzen' : 'Mit Stripe verbinden') + '</button>' +
+          '<div class="msg" id="connectMsg"></div>';
+        $('btnConnect').addEventListener('click', async () => {
+          const b = $('btnConnect'); b.disabled = true; b.textContent = 'Weiterleiten …';
+          try { const r = await S.connectLink(); location.href = r.url; }
+          catch (e) { b.disabled = false; msg($('connectMsg'), e.message, 'error'); }
+        });
+      }
+    } catch (e) {
+      body.innerHTML = '<p class="sub">' + esc(e.message) + '</p>';
+    }
+  }
+
   /* ================= Gesamt-Render ================= */
   async function renderAll() {
     [orders, events] = await Promise.all([S.allOrders(), S.getManagedEvents(true)]);
@@ -672,6 +703,7 @@
     renderOrders();
     renderCheckins();
     renderAdmins();
+    renderConnect();
   }
 
   /* ================= Init & Events ================= */
