@@ -210,6 +210,26 @@
       return data; // { url, order_id }
     },
 
+    // Gebühren-Aufschlüsselung (nur Anzeige – maßgeblich ist die Berechnung serverseitig)
+    feeBreakdown(subtotal, tickets) {
+      const r2 = n => Math.round(n * 100) / 100;
+      const service = subtotal > 0 ? r2(0.035 * subtotal + 0.25 * tickets) : 0;
+      const payment = subtotal > 0 ? r2(0.015 * subtotal + 0.25 * tickets) : 0;
+      return { subtotal, service, payment, total: r2(subtotal + service + payment) };
+    },
+
+    // Stripe Connect (Auszahlungskonto des Veranstalters)
+    async connectStatus() {
+      const { data, error } = await sb.functions.invoke('connect-onboard', { body: { action: 'status' } });
+      if (error) { let m = 'Status nicht abrufbar.'; try { const b = await error.context.json(); if (b && b.error) m = b.error; } catch (_) {} throw new Error(m); }
+      return data; // { hasAccount, chargesEnabled }
+    },
+    async connectLink() {
+      const { data, error } = await sb.functions.invoke('connect-onboard', { body: { action: 'link' } });
+      if (error) { let m = 'Verbindung fehlgeschlagen.'; try { const b = await error.context.json(); if (b && b.error) m = b.error; } catch (_) {} throw new Error(m); }
+      return data; // { url, hasAccount, chargesEnabled }
+    },
+
     /* --- Bestellungen --- */
     async myOrders() {
       const email = this.currentUser();

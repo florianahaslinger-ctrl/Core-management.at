@@ -355,7 +355,7 @@
 
   function renderCheckoutSummary() {
     const user = S.currentUser();
-    const { total, lines } = cartDetails();
+    const { total, count, lines } = cartDetails();
     $('checkoutEmail').textContent = 'Bestellung für: ' + user;
     $('checkoutItems').innerHTML = lines.map(l => {
       let seatInfo = '';
@@ -369,7 +369,16 @@
         '<div class="desc">' + esc(l.ev.name) + ' · ' + fmtDate(l.ev.date) + '</div>' + seatInfo + '</div>' +
         '<div class="cat-price">' + S.fmtEUR.format(l.sum) + '</div></div>';
     }).join('');
-    $('checkoutTotal').textContent = 'Gesamt: ' + S.fmtEUR.format(total);
+    const fb = S.feeBreakdown(total, count);
+    if (fb.total > fb.subtotal) {
+      const feeRow = (name, hint, val) => '<div class="cat-row" style="opacity:.85"><div class="cat-info">' +
+        '<div class="name" style="font-weight:400">' + name + '</div>' + (hint ? '<div class="desc">' + hint + '</div>' : '') +
+        '</div><div class="cat-price">' + S.fmtEUR.format(val) + '</div></div>';
+      $('checkoutItems').innerHTML += feeRow('Zwischensumme', '', fb.subtotal) +
+        feeRow('Servicegebühr', '3,5 % + 0,25 €/Ticket', fb.service) +
+        feeRow('Zahlungsgebühr', '1,5 % + 0,25 €/Ticket', fb.payment);
+    }
+    $('checkoutTotal').textContent = 'Gesamt: ' + S.fmtEUR.format(fb.total);
     $('checkoutNote').textContent = 'Du wirst zur sicheren Stripe-Bezahlseite weitergeleitet ' +
       '(Kreditkarte, Apple Pay u. a.). Deine Tickets werden sofort nach erfolgreicher Zahlung freigeschaltet.';
     msg($('checkoutMsg'), '');
