@@ -10,6 +10,11 @@
   let events = [];   // Cache aller Events (inkl. inaktive)
   let myRole = null; // 'super_admin' | 'organizer'
   let mySuper = false;
+  let statFilter = ''; // Übersicht: '' = alle Bälle, sonst event.id
+
+  // Gefilterte Sicht für die Übersicht (nach gewähltem Ball)
+  function fOrders() { return statFilter ? orders.filter(o => o.eventId === statFilter) : orders; }
+  function fEvents() { return statFilter ? events.filter(e => e.id === statFilter) : events; }
   let gateEmail = '';
 
   function esc(s) {
@@ -91,7 +96,7 @@
 
   /* ================= Übersicht ================= */
   function renderStats() {
-    const st = S.stats(orders);
+    const st = S.stats(fOrders());
     $('statTiles').innerHTML = [
       ['Umsatz (bezahlt)', S.fmtEUR.format(st.revenue), st.openCount + ' Bestellung(en) offen/abgebrochen'],
       ['Verkaufte Tickets', st.ticketCount, 'über ' + st.orderCount + ' Bestellungen'],
@@ -102,7 +107,7 @@
   }
 
   function chartSales() {
-    const data = S.salesByDay(orders, 14);
+    const data = S.salesByDay(fOrders(), 14);
     const W = 560, H = 240, pad = { l: 34, r: 8, t: 12, b: 26 };
     const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
     const maxV = Math.max(1, ...data.map(d => d.qty));
@@ -145,7 +150,7 @@
   }
 
   function chartRevenue() {
-    const data = S.revenueByCategory(orders).slice(0, 8);
+    const data = S.revenueByCategory(fOrders()).slice(0, 8);
     const wrap = $('chartRevenue');
     if (!data.length) {
       wrap.innerHTML = '<p class="sub">Noch keine Verkäufe vorhanden.</p>';
@@ -196,7 +201,7 @@
 
   function renderQuota() {
     let rows = '<tr><th>Event</th><th>Kategorie</th><th>Preis</th><th>Verkauft</th><th>Kontingent</th><th>Auslastung</th></tr>';
-    events.forEach(ev => ev.categories.forEach(cat => {
+    fEvents().forEach(ev => ev.categories.forEach(cat => {
       const pct = cat.quota ? Math.round(100 * cat.sold / cat.quota) : 0;
       rows += '<tr><td>' + esc(ev.name) + '</td><td>' + esc(cat.name) + '</td>' +
         '<td>' + S.fmtEUR.format(cat.price) + '</td><td>' + cat.sold + '</td><td>' + cat.quota + '</td>' +
@@ -658,6 +663,15 @@
     }
   }
 
+  function renderOverview() { renderStats(); chartSales(); chartRevenue(); renderQuota(); }
+  function populateStatEvents() {
+    const sel = $('statEvent'); if (!sel) return;
+    sel.innerHTML = '<option value="">Alle Bälle (gesamt)</option>' +
+      events.map(e => '<option value="' + e.id + '">' + esc(e.name) + '</option>').join('');
+    if (!events.some(e => e.id === statFilter)) statFilter = '';
+    sel.value = statFilter;
+  }
+
   /* ================= Stripe Connect (Auszahlung) ================= */
   async function renderConnect() {
     const body = $('connectBody');
@@ -692,6 +706,7 @@
   /* ================= Gesamt-Render ================= */
   async function renderAll() {
     [orders, events] = await Promise.all([S.allOrders(), S.getManagedEvents(true)]);
+    populateStatEvents();
     renderStats();
     chartSales();
     chartRevenue();
@@ -717,6 +732,7 @@
   $('adminLogout').addEventListener('click', async e => {
     e.preventDefault(); await S.logout(); location.reload();
   });
+  $('statEvent').addEventListener('change', () => { statFilter = $('statEvent').value; renderOverview(); });
   $('orderSearch').addEventListener('input', renderOrders);
   $('orderFilter').addEventListener('change', renderOrders);
   $('btnCheckin').addEventListener('click', doCheckin);
