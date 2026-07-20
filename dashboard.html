@@ -68,6 +68,10 @@
 
   <!-- Übersicht -->
   <div class="tabpane active" id="tabOverview">
+    <div class="super-only" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px">
+      <label for="statEvent" style="margin:0;font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gray)">Umsätze anzeigen für</label>
+      <select id="statEvent" style="min-width:240px"><option value="">Alle Bälle (gesamt)</option></select>
+    </div>
     <div class="dash-grid" id="statTiles"></div>
     <div class="charts-row">
       <div class="chart-card">

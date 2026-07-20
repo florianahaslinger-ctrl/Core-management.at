@@ -31,7 +31,7 @@
   function mapOrder(o) {
     return {
       id: o.id, email: o.email, status: o.status, total: Number(o.total),
-      paidVia: o.paid_via, paidAt: o.paid_at, createdAt: o.created_at,
+      paidVia: o.paid_via, paidAt: o.paid_at, createdAt: o.created_at, eventId: o.event_id || null,
       items: (o.order_items || []).map(i => ({
         categoryId: i.category_id, categoryName: i.category_name,
         eventName: i.event_name, price: Number(i.price), qty: i.qty
@@ -45,7 +45,7 @@
     };
   }
 
-  const ORDER_SELECT = 'id,email,status,total,paid_via,paid_at,created_at,' +
+  const ORDER_SELECT = 'id,email,status,total,paid_via,paid_at,created_at,event_id,' +
     'order_items(category_id,category_name,event_name,price,qty),' +
     'tickets(code,category_id,category_name,event_name,event_date,event_location,price,checked_in,checked_in_at,seats(row_no,table_no,seat_no))';
 
