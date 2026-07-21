@@ -170,6 +170,8 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--ink);
 .tseat{color:var(--gold-light);font-size:13px;font-weight:600;margin-top:3px}
 .linklike{background:none;border:none;color:var(--gold);cursor:pointer;font-size:12px;
   text-decoration:underline;padding:0;font-family:inherit}
+.seat-howto{background:rgba(201,168,76,.12);border:1px solid var(--gold);border-radius:8px;padding:11px 14px;margin:2px 0 14px;font-size:13px;line-height:1.55;color:#6a5214}
+.seat-howto b{color:#000}
 .seat-legend{display:flex;gap:18px;margin:6px 0 14px;font-size:12px;color:var(--gray);flex-wrap:wrap}
 .seat-legend span{display:inline-flex;align-items:center;gap:6px}
 .seat-legend i.seat{width:16px;height:16px;pointer-events:none}
