@@ -75,7 +75,11 @@ Deno.serve(async (req) => {
     // Standard: nur Status
     return json({ hasAccount: !!acct, chargesEnabled });
   } catch (e) {
+    const m = (e as Error).message || "";
+    if (/platform.?profile|managing losses|responsibilities/i.test(m)) {
+      return json({ error: "Die Zahlungsabwicklung ist noch nicht freigeschaltet. Bitte wende dich an CORE Management (office@core-management.at)." }, 503);
+    }
     console.error(e);
-    return json({ error: "Fehler: " + (e as Error).message }, 500);
+    return json({ error: "Fehler bei der Stripe-Verbindung: " + m }, 500);
   }
 });
