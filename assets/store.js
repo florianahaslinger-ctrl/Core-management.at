@@ -75,8 +75,10 @@
     },
 
     async verifyCode(email, code) {
+      const token = String(code).replace(/\D/g, '');
+      if (token.length < 6) throw new Error('Bitte gib den 6-stelligen Code aus der E-Mail ein.');
       const { data, error } = await sb.auth.verifyOtp({
-        email: normEmail(email), token: String(code).replace(/\D/g, ''), type: 'email'
+        email: normEmail(email), token, type: 'email'
       });
       if (error) throw new Error(niceAuthError(error));
       session = data.session;
