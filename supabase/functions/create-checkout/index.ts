@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
     const ids = items.map((i) => i.category_id);
     const { data: cats, error: catErr } = await admin
       .from("categories")
-      .select("id,name,price,quota,max_per_order,active,seating,event_id,events(name,date,location,active)")
+      .select("id,name,price,quota,max_per_order,active,seating,event_id,events(name,date,location,active,shared_quota)")
       .in("id", ids);
     if (catErr) throw catErr;
 
@@ -70,14 +70,18 @@ Deno.serve(async (req) => {
     let li = 0;
     for (const it of items) {
       const cat = (cats ?? []).find((c) => c.id === it.category_id);
-      const ev = cat?.events as { name: string; date: string; location: string; active: boolean } | null;
+      const ev = cat?.events as { name: string; date: string; location: string; active: boolean; shared_quota: number | null } | null;
       const qty = Math.floor(Number(it.qty));
       if (!cat || !cat.active || !ev?.active) return json({ error: "Eine Ticketkategorie ist nicht mehr verfügbar." }, 400);
       if (!Number.isFinite(qty) || qty < 1 || qty > cat.max_per_order) {
         return json({ error: `Ungültige Menge für „${cat.name}“ (max. ${cat.max_per_order}).` }, 400);
       }
-      const rest = cat.quota - (soldMap.get(cat.id) ?? 0);
-      if (qty > rest) return json({ error: `Für „${cat.name}“ sind nur noch ${Math.max(0, rest)} Tickets verfügbar.` }, 400);
+      // Pro-Kategorie-Kontingent nur prüfen, wenn KEIN Gesamtkontingent aktiv ist.
+      // Bei aktivem Gesamtkontingent greift die gemeinsame Prüfung nach der Schleife.
+      if (ev.shared_quota === null || ev.shared_quota === undefined) {
+        const rest = cat.quota - (soldMap.get(cat.id) ?? 0);
+        if (qty > rest) return json({ error: `Für „${cat.name}“ sind nur noch ${Math.max(0, rest)} Tickets verfügbar.` }, 400);
+      }
       // Sitzplätze: für Sitzkarten müssen genau qty gültige Plätze gewählt sein
       if (cat.seating) {
         const seatIds = Array.isArray(it.seat_ids) ? it.seat_ids : [];
@@ -113,6 +117,20 @@ Deno.serve(async (req) => {
       return json({ error: "Bitte pro Bestellung nur Tickets eines Balls auswählen." }, 400);
     }
     const eventId = [...eventIds][0];
+
+    // Event einmalig laden (Gesamtkontingent + Auszahlungskonto).
+    const { data: evRow } = await admin.from("events")
+      .select("owner_email,shared_quota").eq("id", eventId).maybeSingle();
+
+    // Gesamtkontingent (modular): ist es gesetzt, zählt der gemeinsame Topf über alle Kategorien.
+    if (evRow?.shared_quota !== null && evRow?.shared_quota !== undefined) {
+      const { data: es } = await admin.from("event_sold").select("sold").eq("event_id", eventId).maybeSingle();
+      const alreadySold = es?.sold ?? 0;
+      const restShared = Number(evRow.shared_quota) - alreadySold;
+      if (totalTickets > restShared) {
+        return json({ error: `Für diesen Ball sind nur noch ${Math.max(0, restShared)} Tickets verfügbar.` }, 400);
+      }
+    }
 
     // Gebühren: Servicegebühr (CORE) 3,5 % + 0,25 €/Ticket · Zahlungsgebühr (Stripe) 1,5 % + 0,25 €/Ticket
     const serviceFee = subtotal > 0 ? Math.round((0.035 * subtotal + 0.25 * totalTickets) * 100) / 100 : 0;
@@ -185,7 +203,6 @@ Deno.serve(async (req) => {
     // Bei zugewiesenem Veranstalter läuft die Zahlung auf dessen Konto,
     // deine Gebühr (Service + Zahlung) bleibt als application_fee bei CORE.
     // Ohne Veranstalter (CORE-eigenes Event) läuft alles wie bisher aufs Plattform-Konto.
-    const { data: evRow } = await admin.from("events").select("owner_email").eq("id", eventId).maybeSingle();
     let connect = "";
     if (evRow?.owner_email) {
       const { data: owner } = await admin.from("admins")
