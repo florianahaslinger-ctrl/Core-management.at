@@ -273,6 +273,15 @@
     <label>Beschreibung</label>
     <textarea id="evDesc" rows="2"></textarea>
 
+    <div style="margin-top:14px;border:1px solid var(--line);border-radius:10px;padding:12px 14px">
+      <label class="switch" style="margin:0"><input type="checkbox" id="evSharedOn"> Gesamtkontingent verwenden</label>
+      <p class="hint" style="margin:6px 0 0">Ein gemeinsamer Ticket-Topf für alle Kategorien: egal welche Kategorie gekauft wird, es zählt gegen dieselbe Gesamtzahl. Die einzelnen Kategorie-Kontingente werden dann ignoriert.</p>
+      <div id="evSharedBox" style="display:none;margin-top:10px">
+        <label>Gesamt-Ticketanzahl</label>
+        <input type="number" id="evSharedQuota" min="0" step="1" style="max-width:200px" placeholder="z. B. 500">
+      </div>
+    </div>
+
     <div class="super-only" style="margin-top:14px">
       <label>Veranstalter (Besitzer dieses Balls)</label>
       <select id="evOwner"><option value="">— Head-Admin (CORE) —</option></select>

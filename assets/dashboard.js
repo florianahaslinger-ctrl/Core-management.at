@@ -201,14 +201,23 @@
 
   function renderQuota() {
     let rows = '<tr><th>Event</th><th>Kategorie</th><th>Preis</th><th>Verkauft</th><th>Kontingent</th><th>Auslastung</th></tr>';
-    fEvents().forEach(ev => ev.categories.forEach(cat => {
-      const pct = cat.quota ? Math.round(100 * cat.sold / cat.quota) : 0;
-      rows += '<tr><td>' + esc(ev.name) + '</td><td>' + esc(cat.name) + '</td>' +
-        '<td>' + S.fmtEUR.format(cat.price) + '</td><td>' + cat.sold + '</td><td>' + cat.quota + '</td>' +
-        '<td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;max-width:140px;height:6px;background:rgba(255,255,255,.08);border-radius:3px">' +
-        '<div style="width:' + Math.min(100, pct) + '%;height:6px;background:' + GOLD + ';border-radius:3px"></div></div>' +
-        '<span style="color:#999;font-size:12px">' + pct + ' %</span></div></td></tr>';
-    }));
+    const bar = (pct) => '<td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;max-width:140px;height:6px;background:rgba(255,255,255,.08);border-radius:3px">' +
+      '<div style="width:' + Math.min(100, pct) + '%;height:6px;background:' + GOLD + ';border-radius:3px"></div></div>' +
+      '<span style="color:#999;font-size:12px">' + pct + ' %</span></div></td>';
+    fEvents().forEach(ev => {
+      // Gesamtkontingent: eine Zeile je Event statt je Kategorie.
+      if (ev.sharedQuota !== null && ev.sharedQuota !== undefined) {
+        const pct = ev.sharedQuota ? Math.round(100 * ev.sharedSold / ev.sharedQuota) : 0;
+        rows += '<tr><td>' + esc(ev.name) + '</td><td><em>Alle Kategorien (Gesamtkontingent)</em></td>' +
+          '<td>—</td><td>' + ev.sharedSold + '</td><td>' + ev.sharedQuota + '</td>' + bar(pct) + '</tr>';
+        return;
+      }
+      ev.categories.forEach(cat => {
+        const pct = cat.quota ? Math.round(100 * cat.sold / cat.quota) : 0;
+        rows += '<tr><td>' + esc(ev.name) + '</td><td>' + esc(cat.name) + '</td>' +
+          '<td>' + S.fmtEUR.format(cat.price) + '</td><td>' + cat.sold + '</td><td>' + cat.quota + '</td>' + bar(pct) + '</tr>';
+      });
+    });
     $('quotaTable').innerHTML = rows;
   }
 
@@ -219,9 +228,13 @@
       '<span class="badge ' + (ev.active ? 'bezahlt' : 'storniert') + '">' + (ev.active ? 'aktiv' : 'inaktiv') + '</span>' +
       '<span class="event-meta">' + fmtDT(ev.date) + (ev.location ? ' · ' + esc(ev.location) : '') + '</span></div>' +
       '<div class="table-scroll"><table class="data"><tr><th>Kategorie</th><th>Preis</th><th>Kontingent</th><th>Verkauft</th><th>Status</th></tr>' +
-      ev.categories.map(c => '<tr><td>' + esc(c.name) + '</td><td>' + S.fmtEUR.format(c.price) + '</td><td>' + c.quota +
+      ev.categories.map(c => '<tr><td>' + esc(c.name) + '</td><td>' + S.fmtEUR.format(c.price) + '</td><td>' +
+        ((ev.sharedQuota !== null && ev.sharedQuota !== undefined) ? '<span title="Gesamtkontingent aktiv">—</span>' : c.quota) +
         '</td><td>' + c.sold + '</td><td>' + (c.active ? 'aktiv' : 'inaktiv') + '</td></tr>').join('') +
       '</table></div>' +
+      ((ev.sharedQuota !== null && ev.sharedQuota !== undefined)
+        ? '<div class="hint" style="margin-top:8px">Gesamtkontingent: <strong>' + ev.sharedQuota + '</strong> Tickets · ' + ev.sharedSold + ' verkauft · ' + ev.sharedRemaining + ' frei</div>'
+        : '') +
       '<div class="hint" style="margin-top:10px">Shop-Link: <a href="tickets.html?event=' + ev.id + '" target="_blank" rel="noopener">tickets.html?event=' + ev.id + '</a>' +
         (mySuper ? ' · Veranstalter: ' + (ev.ownerEmail ? esc(ev.ownerEmail) : '— (CORE)') : '') + '</div>' +
       '<div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">' +
@@ -276,6 +289,11 @@
     $('evLocation').value = ev ? (ev.location || '') : '';
     $('evDesc').value = ev ? (ev.description || '') : '';
     $('evActive').checked = ev ? !!ev.active : true;
+    // Gesamtkontingent (modular): NULL = aus, Zahl = an
+    const sharedOn = !!(ev && ev.sharedQuota !== null && ev.sharedQuota !== undefined);
+    $('evSharedOn').checked = sharedOn;
+    $('evSharedQuota').value = sharedOn ? ev.sharedQuota : '';
+    updateSharedUI();
     // Veranstalter-Zuweisung (nur Head-Admin)
     if (mySuper) {
       S.getOrganizers().then(list => {
@@ -294,6 +312,7 @@
     } else { shopBox.style.display = 'none'; }
     $('catEditor').innerHTML = (ev && ev.categories.length ? ev.categories : [null]).map(catRowHTML).join('');
     bindCatRemove();
+    updateSharedUI();
     msg($('evMsg'), '');
     // Sitzplan-Bereich nur bei bestehenden Events
     const box = $('seatPlanBox');
@@ -317,6 +336,19 @@
   function bindCatRemove() {
     $('catEditor').querySelectorAll('.c-remove').forEach(b => {
       b.onclick = () => b.closest('.admin-cat').remove();
+    });
+  }
+
+  // Gesamtkontingent-Umschalter: Zahlenfeld zeigen und die pro-Kategorie-Kontingente
+  // sichtbar deaktivieren, solange der gemeinsame Topf aktiv ist.
+  function updateSharedUI() {
+    const on = $('evSharedOn').checked;
+    $('evSharedBox').style.display = on ? '' : 'none';
+    $('catEditor').querySelectorAll('.c-quota').forEach(inp => {
+      inp.disabled = on;
+      const wrap = inp.closest('div');
+      if (wrap) wrap.style.opacity = on ? '.45' : '';
+      inp.title = on ? 'Deaktiviert – dieses Event nutzt ein Gesamtkontingent.' : '';
     });
   }
 
@@ -775,7 +807,9 @@
   $('btnAddCat').addEventListener('click', () => {
     $('catEditor').insertAdjacentHTML('beforeend', catRowHTML(null));
     bindCatRemove();
+    updateSharedUI();
   });
+  $('evSharedOn').addEventListener('change', updateSharedUI);
   $('btnAddAdmin').addEventListener('click', async () => {
     try {
       await S.addOrganizer($('newAdminEmail').value);
@@ -811,6 +845,7 @@
       location: $('evLocation').value.trim(),
       description: $('evDesc').value.trim(),
       active: $('evActive').checked,
+      sharedQuota: $('evSharedOn').checked ? (parseInt($('evSharedQuota').value, 10) || 0) : null,
       categories: cats
     };
     // Besitzer/Veranstalter zuweisen

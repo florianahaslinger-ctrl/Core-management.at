@@ -90,28 +90,43 @@
     /* --- Events & Verfügbarkeit --- */
     async getEvents(includeInactive) {
       let q = sb.from('events')
-        .select('id,name,date,location,description,active,layout,owner_email,categories(id,name,price,quota,max_per_order,description,active,sort,seating)')
+        .select('id,name,date,location,description,active,layout,owner_email,shared_quota,categories(id,name,price,quota,max_per_order,description,active,sort,seating)')
         .order('date', { ascending: true });
       const { data, error } = await q;
       if (error) throw new Error(error.message);
       const { data: sold } = await sb.from('category_sold').select('category_id,sold');
       const soldMap = {};
       (sold || []).forEach(s => { soldMap[s.category_id] = s.sold; });
+      // Verkaufte Menge je Event – nur für Events mit Gesamtkontingent nötig.
+      const { data: evSold } = await sb.from('event_sold').select('event_id,sold');
+      const evSoldMap = {};
+      (evSold || []).forEach(s => { evSoldMap[s.event_id] = s.sold; });
       return (data || [])
         .filter(e => includeInactive || e.active)
-        .map(e => ({
-          id: e.id, name: e.name, date: e.date, location: e.location,
-          description: e.description, active: e.active, layout: e.layout || null,
-          ownerEmail: e.owner_email || null,
-          categories: (e.categories || [])
-            .sort((a, b) => (a.sort || 0) - (b.sort || 0))
-            .map(c => ({
-              id: c.id, name: c.name, price: Number(c.price), quota: c.quota,
-              maxPerOrder: c.max_per_order, description: c.description, active: c.active,
-              seating: !!c.seating,
-              sold: soldMap[c.id] || 0, remaining: Math.max(0, c.quota - (soldMap[c.id] || 0))
-            }))
-        }));
+        .map(e => {
+          // Gesamtkontingent: NULL = aus (pro-Kategorie), Zahl = an (gemeinsamer Topf)
+          const sharedQuota = (e.shared_quota === null || e.shared_quota === undefined) ? null : Number(e.shared_quota);
+          const sharedSold = evSoldMap[e.id] || 0;
+          const sharedRemaining = sharedQuota === null ? null : Math.max(0, sharedQuota - sharedSold);
+          return {
+            id: e.id, name: e.name, date: e.date, location: e.location,
+            description: e.description, active: e.active, layout: e.layout || null,
+            ownerEmail: e.owner_email || null,
+            sharedQuota: sharedQuota, sharedSold: sharedSold, sharedRemaining: sharedRemaining,
+            categories: (e.categories || [])
+              .sort((a, b) => (a.sort || 0) - (b.sort || 0))
+              .map(c => ({
+                id: c.id, name: c.name, price: Number(c.price), quota: c.quota,
+                maxPerOrder: c.max_per_order, description: c.description, active: c.active,
+                seating: !!c.seating,
+                sold: soldMap[c.id] || 0,
+                // Bei aktivem Gesamtkontingent gilt der gemeinsame Rest für jede Kategorie.
+                remaining: sharedQuota === null
+                  ? Math.max(0, c.quota - (soldMap[c.id] || 0))
+                  : sharedRemaining
+              }))
+          };
+        });
     },
 
     /* --- Sitzplätze --- */
@@ -356,6 +371,11 @@
         name: ev.name, date: ev.date || null, location: ev.location || null,
         description: ev.description || null, active: !!ev.active
       };
+      // Gesamtkontingent nur setzen, wenn explizit übergeben (sonst bestehenden Wert nicht überschreiben).
+      // null = deaktiviert, Zahl = gemeinsamer Topf.
+      if (ev.sharedQuota !== undefined) {
+        row.shared_quota = (ev.sharedQuota === null || ev.sharedQuota === '') ? null : Math.max(0, parseInt(ev.sharedQuota, 10) || 0);
+      }
       // Besitzer nur setzen, wenn explizit übergeben (sonst bestehenden nicht überschreiben)
       if (ev.ownerEmail !== undefined) row.owner_email = ev.ownerEmail ? normEmail(ev.ownerEmail) : null;
       let eventId = ev.id;
