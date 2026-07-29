@@ -369,7 +369,7 @@
         '<div class="desc">' + esc(l.ev.name) + ' · ' + fmtDate(l.ev.date) + '</div>' + seatInfo + '</div>' +
         '<div class="cat-price">' + S.fmtEUR.format(l.sum) + '</div></div>';
     }).join('');
-    const fb = S.feeBreakdown(total, count);
+    const fb = S.feeBreakdownLines(lines);
     if (fb.total > fb.subtotal) {
       const feeRow = (name, hint, val) => '<div class="cat-row" style="opacity:.85"><div class="cat-info">' +
         '<div class="name" style="font-weight:400">' + name + '</div>' + (hint ? '<div class="desc">' + hint + '</div>' : '') +

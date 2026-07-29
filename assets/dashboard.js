@@ -294,6 +294,8 @@
     $('evSharedOn').checked = sharedOn;
     $('evSharedQuota').value = sharedOn ? ev.sharedQuota : '';
     updateSharedUI();
+    // Gebühren-Modus: false (Standard) = Kunde zahlt Gebühren, true = Veranstalter übernimmt
+    $('evFeesOnOrganizer').checked = ev ? !!ev.feesOnOrganizer : false;
     // Veranstalter-Zuweisung (nur Head-Admin)
     if (mySuper) {
       S.getOrganizers().then(list => {
@@ -846,6 +848,7 @@
       description: $('evDesc').value.trim(),
       active: $('evActive').checked,
       sharedQuota: $('evSharedOn').checked ? (parseInt($('evSharedQuota').value, 10) || 0) : null,
+      feesOnOrganizer: $('evFeesOnOrganizer').checked,
       categories: cats
     };
     // Besitzer/Veranstalter zuweisen
