@@ -90,7 +90,7 @@
     /* --- Events & Verfügbarkeit --- */
     async getEvents(includeInactive) {
       let q = sb.from('events')
-        .select('id,name,date,location,description,active,layout,owner_email,shared_quota,categories(id,name,price,quota,max_per_order,description,active,sort,seating)')
+        .select('id,name,date,location,description,active,layout,owner_email,shared_quota,fees_on_organizer,categories(id,name,price,quota,max_per_order,description,active,sort,seating)')
         .order('date', { ascending: true });
       const { data, error } = await q;
       if (error) throw new Error(error.message);
@@ -113,6 +113,7 @@
             description: e.description, active: e.active, layout: e.layout || null,
             ownerEmail: e.owner_email || null,
             sharedQuota: sharedQuota, sharedSold: sharedSold, sharedRemaining: sharedRemaining,
+            feesOnOrganizer: !!e.fees_on_organizer,
             categories: (e.categories || [])
               .sort((a, b) => (a.sort || 0) - (b.sort || 0))
               .map(c => ({
@@ -233,6 +234,20 @@
       const service = subtotal > 0 ? r2(0.035 * subtotal + 0.25 * tickets) : 0;
       const payment = subtotal > 0 ? r2(0.015 * subtotal + 0.25 * tickets) : 0;
       return { subtotal, service, payment, total: r2(subtotal + service + payment) };
+    },
+
+    // Gebühren-Aufschlüsselung je Warenkorb-Zeile: Zeilen von Events mit
+    // feesOnOrganizer=true tragen keine Gebühr (Kunde zahlt dort exakt den Ticketpreis).
+    feeBreakdownLines(lines) {
+      const r2 = n => Math.round(n * 100) / 100;
+      let subtotal = 0, feeSub = 0, feeTickets = 0;
+      (lines || []).forEach(l => {
+        subtotal += l.sum;
+        if (!(l.ev && l.ev.feesOnOrganizer)) { feeSub += l.sum; feeTickets += l.qty; }
+      });
+      const service = feeSub > 0 ? r2(0.035 * feeSub + 0.25 * feeTickets) : 0;
+      const payment = feeSub > 0 ? r2(0.015 * feeSub + 0.25 * feeTickets) : 0;
+      return { subtotal: r2(subtotal), service, payment, total: r2(subtotal + service + payment) };
     },
 
     // Stripe Connect (Auszahlungskonto des Veranstalters)
@@ -376,6 +391,8 @@
       if (ev.sharedQuota !== undefined) {
         row.shared_quota = (ev.sharedQuota === null || ev.sharedQuota === '') ? null : Math.max(0, parseInt(ev.sharedQuota, 10) || 0);
       }
+      // Gebühren-Modus nur setzen, wenn explizit übergeben.
+      if (ev.feesOnOrganizer !== undefined) row.fees_on_organizer = !!ev.feesOnOrganizer;
       // Besitzer nur setzen, wenn explizit übergeben (sonst bestehenden nicht überschreiben)
       if (ev.ownerEmail !== undefined) row.owner_email = ev.ownerEmail ? normEmail(ev.ownerEmail) : null;
       let eventId = ev.id;

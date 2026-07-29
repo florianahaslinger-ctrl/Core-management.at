@@ -120,7 +120,9 @@ Deno.serve(async (req) => {
 
     // Event einmalig laden (Gesamtkontingent + Auszahlungskonto).
     const { data: evRow } = await admin.from("events")
-      .select("owner_email,shared_quota").eq("id", eventId).maybeSingle();
+      .select("owner_email,shared_quota,fees_on_organizer").eq("id", eventId).maybeSingle();
+    // Gebühren-Modus: true = Veranstalter trägt die Gebühren, Kunde zahlt exakt den Ticketpreis.
+    const feesOnOrganizer = evRow?.fees_on_organizer === true;
 
     // Gesamtkontingent (modular): ist es gesetzt, zählt der gemeinsame Topf über alle Kategorien.
     if (evRow?.shared_quota !== null && evRow?.shared_quota !== undefined) {
@@ -135,13 +137,16 @@ Deno.serve(async (req) => {
     // Gebühren: Servicegebühr (CORE) 3,5 % + 0,25 €/Ticket · Zahlungsgebühr (Stripe) 1,5 % + 0,25 €/Ticket
     const serviceFee = subtotal > 0 ? Math.round((0.035 * subtotal + 0.25 * totalTickets) * 100) / 100 : 0;
     const paymentFee = subtotal > 0 ? Math.round((0.015 * subtotal + 0.25 * totalTickets) * 100) / 100 : 0;
-    const total = Math.round((subtotal + serviceFee + paymentFee) * 100) / 100;
-    // Gebühren als eigene Positionen in der Stripe-Zahlung
-    if (serviceFee > 0) {
+    // Kunde zahlt: bei feesOnOrganizer nur den Ticketpreis, sonst zzgl. Gebühren.
+    const total = feesOnOrganizer
+      ? subtotal
+      : Math.round((subtotal + serviceFee + paymentFee) * 100) / 100;
+    // Gebühren nur dann als eigene Positionen zeigen, wenn der Kunde sie trägt.
+    if (!feesOnOrganizer && serviceFee > 0) {
       lineItems.push(`line_items[${li}][price_data][currency]=eur&line_items[${li}][price_data][product_data][name]=${encodeURIComponent("Servicegebühr")}&line_items[${li}][price_data][unit_amount]=${Math.round(serviceFee * 100)}&line_items[${li}][quantity]=1`);
       li++;
     }
-    if (paymentFee > 0) {
+    if (!feesOnOrganizer && paymentFee > 0) {
       lineItems.push(`line_items[${li}][price_data][currency]=eur&line_items[${li}][price_data][product_data][name]=${encodeURIComponent("Zahlungsgebühr")}&line_items[${li}][price_data][unit_amount]=${Math.round(paymentFee * 100)}&line_items[${li}][quantity]=1`);
       li++;
     }
@@ -212,7 +217,11 @@ Deno.serve(async (req) => {
         if (allSeatIds.length) await admin.from("seat_holds").delete().eq("order_id", orderId);
         return json({ error: "Der Veranstalter hat die Zahlungsabwicklung noch nicht eingerichtet. Bitte später erneut versuchen." }, 409);
       }
-      const feeCents = Math.round((serviceFee + paymentFee) * 100);
+      // CORE erhält Service + Zahlung als application_fee – unabhängig vom Gebühren-Modus.
+      // Im Übernahme-Modus ist der Ladebetrag der reine Ticketpreis; die Gebühr darf ihn
+      // nicht übersteigen, sonst lehnt Stripe ab (Veranstalter erhält dann Betrag − Gebühr).
+      const totalCents = Math.round(total * 100);
+      const feeCents = Math.min(Math.round((serviceFee + paymentFee) * 100), totalCents);
       connect = `&payment_intent_data[application_fee_amount]=${feeCents}` +
         `&payment_intent_data[transfer_data][destination]=${owner.stripe_account_id}`;
     }
