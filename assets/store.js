@@ -58,6 +58,10 @@
       const { data } = await sb.auth.getSession();
       session = data.session;
       sb.auth.onAuthStateChange((_ev, s) => { session = s; });
+      // Ticket-PDF: Sponsor-Logos je Event automatisch nachladen (falls PDF-Modul geladen).
+      if (global.CMTicketPDF && typeof global.CMTicketPDF.setSponsorResolver === 'function') {
+        global.CMTicketPDF.setSponsorResolver(id => Store.eventSponsorLogos(id));
+      }
       return session;
     },
     client() { return sb; },
@@ -90,7 +94,7 @@
     /* --- Events & Verfügbarkeit --- */
     async getEvents(includeInactive) {
       let q = sb.from('events')
-        .select('id,name,date,location,description,active,layout,owner_email,shared_quota,fees_on_organizer,categories(id,name,price,quota,max_per_order,description,active,sort,seating)')
+        .select('id,name,date,location,description,active,layout,owner_email,shared_quota,fees_on_organizer,sponsor_logos,categories(id,name,price,quota,max_per_order,description,active,sort,seating)')
         .order('date', { ascending: true });
       const { data, error } = await q;
       if (error) throw new Error(error.message);
@@ -114,6 +118,7 @@
             ownerEmail: e.owner_email || null,
             sharedQuota: sharedQuota, sharedSold: sharedSold, sharedRemaining: sharedRemaining,
             feesOnOrganizer: !!e.fees_on_organizer,
+            sponsorLogos: Array.isArray(e.sponsor_logos) ? e.sponsor_logos : [],
             categories: (e.categories || [])
               .sort((a, b) => (a.sort || 0) - (b.sort || 0))
               .map(c => ({
@@ -248,6 +253,40 @@
       const service = feeSub > 0 ? r2(0.035 * feeSub + 0.25 * feeTickets) : 0;
       const payment = feeSub > 0 ? r2(0.015 * feeSub + 0.25 * feeTickets) : 0;
       return { subtotal: r2(subtotal), service, payment, total: r2(subtotal + service + payment) };
+    },
+
+    // Sponsor-Logos eines Events (für die Ticket-PDF). Öffentlich lesbar.
+    async eventSponsorLogos(eventId) {
+      if (!eventId) return [];
+      const { data, error } = await sb.from('events').select('sponsor_logos').eq('id', eventId).maybeSingle();
+      if (error) return [];
+      return Array.isArray(data && data.sponsor_logos) ? data.sponsor_logos : [];
+    },
+
+    /* --- Einlass-Scanner (passwortgeschützt, pro Event) --- */
+    // Passwort setzen/ändern (leerer String = deaktivieren). Nur Event-Besitzer.
+    async setCheckinPassword(eventId, password) {
+      const { error } = await sb.rpc('set_checkin_password', { p_event: eventId, p_password: password || '' });
+      if (error) throw new Error(error.message.replace(/^.*?: /, ''));
+    },
+    async checkinHasPassword(eventId) {
+      const { data, error } = await sb.rpc('checkin_has_password', { p_event: eventId });
+      if (error) return false;
+      return !!data;
+    },
+    // Login auf der Einlass-Seite (anon): prüft das Passwort, liefert Eventdaten.
+    async verifyCheckinPassword(eventId, password) {
+      const { data, error } = await sb.rpc('verify_checkin_password', { p_event: eventId, p_password: password });
+      if (error) throw new Error(error.message.replace(/^.*?: /, ''));
+      return data; // { ok, event, date, location } | { ok:false, reason? }
+    },
+    // Check-in per Passwort (anon), streng auf das Event begrenzt.
+    async checkInWithPassword(eventId, password, code) {
+      const { data, error } = await sb.rpc('check_in_with_password', {
+        p_event: eventId, p_password: password, p_code: this.extractCode(code)
+      });
+      if (error) throw new Error(error.message.replace(/^.*?: /, ''));
+      return data; // { code, category, event, email, seat }
     },
 
     // Stripe Connect (Auszahlungskonto des Veranstalters)
@@ -393,6 +432,8 @@
       }
       // Gebühren-Modus nur setzen, wenn explizit übergeben.
       if (ev.feesOnOrganizer !== undefined) row.fees_on_organizer = !!ev.feesOnOrganizer;
+      // Sponsor-Logos nur setzen, wenn explizit übergeben.
+      if (ev.sponsorLogos !== undefined) row.sponsor_logos = Array.isArray(ev.sponsorLogos) ? ev.sponsorLogos : [];
       // Besitzer nur setzen, wenn explizit übergeben (sonst bestehenden nicht überschreiben)
       if (ev.ownerEmail !== undefined) row.owner_email = ev.ownerEmail ? normEmail(ev.ownerEmail) : null;
       let eventId = ev.id;
