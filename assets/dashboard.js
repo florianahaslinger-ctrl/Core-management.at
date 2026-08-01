@@ -312,6 +312,28 @@
       $('evShopUrl').value = url; $('evShopOpen').href = url;
       shopBox.style.display = '';
     } else { shopBox.style.display = 'none'; }
+    // Sponsoren-Logos in den Editor laden
+    editorSponsors = ev && Array.isArray(ev.sponsorLogos) ? ev.sponsorLogos.slice() : [];
+    renderSponsors();
+    // Einlass-Scanner: Passwort-Status + Link (nur bestehende Events)
+    const ciBox = $('evCheckinBox');
+    $('evCheckinPw').value = '';
+    msg($('evCheckinMsg'), '');
+    if (ev) {
+      ciBox.style.display = '';
+      const curl = location.origin + '/einlass.html?event=' + ev.id;
+      $('evCheckinUrl').value = curl; $('btnOpenCheckin').href = curl;
+      $('evCheckinStatus').textContent = 'Status wird geladen …';
+      $('evCheckinLinkBox').style.display = 'none';
+      S.checkinHasPassword(ev.id).then(has => {
+        $('evCheckinStatus').innerHTML = has
+          ? '<span style="color:var(--gold-light)">✓ Einlass-Passwort ist gesetzt.</span> Personal kann den Einlass-Link nutzen.'
+          : 'Noch kein Einlass-Passwort gesetzt – der Scanner-Link ist erst nach dem Speichern eines Passworts nutzbar.';
+        $('evCheckinLinkBox').style.display = has ? '' : 'none';
+      }).catch(() => { $('evCheckinStatus').textContent = ''; });
+    } else {
+      ciBox.style.display = 'none';
+    }
     $('catEditor').innerHTML = (ev && ev.categories.length ? ev.categories : [null]).map(catRowHTML).join('');
     bindCatRemove();
     updateSharedUI();
@@ -338,6 +360,54 @@
   function bindCatRemove() {
     $('catEditor').querySelectorAll('.c-remove').forEach(b => {
       b.onclick = () => b.closest('.admin-cat').remove();
+    });
+  }
+
+  /* ---- Sponsoren-Logos im Event-Editor ---- */
+  let editorSponsors = []; // Array von data-URLs
+
+  // Bild aus Datei lesen und auf handliche Größe verkleinern (max. 480px hoch),
+  // damit die Logos nicht die Event-Zeile aufblähen. Ausgabe als data-URL.
+  function fileToLogo(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Datei konnte nicht gelesen werden.'));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('Kein gültiges Bild.'));
+        img.onload = () => {
+          const maxH = 480, maxW = 960;
+          let w = img.naturalWidth, h = img.naturalHeight;
+          const scale = Math.min(1, maxH / h, maxW / w);
+          w = Math.max(1, Math.round(w * scale)); h = Math.max(1, Math.round(h * scale));
+          const cv = document.createElement('canvas');
+          cv.width = w; cv.height = h;
+          const ctx = cv.getContext('2d');
+          // PNG behalten (Transparenz), sonst JPEG für kleinere Dateien
+          const isPng = /image\/png/i.test(file.type);
+          if (!isPng) { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h); }
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(cv.toDataURL(isPng ? 'image/png' : 'image/jpeg', 0.88));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderSponsors() {
+    const box = $('evSponsorList');
+    if (!editorSponsors.length) {
+      box.innerHTML = '<span class="hint">Noch keine Logos hochgeladen.</span>';
+      return;
+    }
+    box.innerHTML = editorSponsors.map((src, i) =>
+      '<div style="position:relative;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px;height:56px;display:flex;align-items:center">' +
+      '<img src="' + src + '" alt="Sponsor" style="max-height:44px;max-width:120px;display:block">' +
+      '<button type="button" data-rmsp="' + i + '" title="Entfernen" style="position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;border:none;background:#c0392b;color:#fff;cursor:pointer;line-height:1">×</button>' +
+      '</div>').join('');
+    box.querySelectorAll('[data-rmsp]').forEach(b => {
+      b.onclick = () => { editorSponsors.splice(parseInt(b.dataset.rmsp, 10), 1); renderSponsors(); };
     });
   }
 
@@ -826,6 +896,46 @@
     if (navigator.clipboard) navigator.clipboard.writeText(inp.value).then(done).catch(() => { document.execCommand('copy'); done(); });
     else { document.execCommand('copy'); done(); }
   });
+
+  /* ---- Sponsoren-Logos ---- */
+  $('btnAddSponsor').addEventListener('click', () => $('evSponsorFile').click());
+  $('evSponsorFile').addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = ''; // gleiche Datei erneut wählbar
+    for (const f of files) {
+      if (editorSponsors.length >= 8) { msg($('evMsg'), 'Maximal 8 Sponsor-Logos pro Ball.', 'error'); break; }
+      try { editorSponsors.push(await fileToLogo(f)); }
+      catch (err) { msg($('evMsg'), 'Logo „' + f.name + '“ konnte nicht geladen werden: ' + err.message, 'error'); }
+    }
+    renderSponsors();
+  });
+
+  /* ---- Einlass-Passwort ---- */
+  async function saveCheckinPw(clear) {
+    const id = $('evId').value;
+    if (!id) { msg($('evCheckinMsg'), 'Bitte das Event zuerst speichern.', 'error'); return; }
+    const pw = clear ? '' : $('evCheckinPw').value;
+    try {
+      await S.setCheckinPassword(id, pw);
+      $('evCheckinPw').value = '';
+      msg($('evCheckinMsg'), clear ? 'Einlass-Zugang deaktiviert.' : 'Einlass-Passwort gespeichert.', 'ok');
+      const has = await S.checkinHasPassword(id);
+      $('evCheckinStatus').innerHTML = has
+        ? '<span style="color:var(--gold-light)">✓ Einlass-Passwort ist gesetzt.</span> Personal kann den Einlass-Link nutzen.'
+        : 'Noch kein Einlass-Passwort gesetzt.';
+      $('evCheckinLinkBox').style.display = has ? '' : 'none';
+    } catch (e) { msg($('evCheckinMsg'), e.message, 'error'); }
+  }
+  $('btnSaveCheckinPw').addEventListener('click', () => saveCheckinPw(false));
+  $('btnClearCheckinPw').addEventListener('click', () => {
+    if (confirm('Einlass-Zugang für diesen Ball wirklich deaktivieren? Der bestehende Link funktioniert dann nicht mehr.')) saveCheckinPw(true);
+  });
+  $('btnCopyCheckin').addEventListener('click', () => {
+    const inp = $('evCheckinUrl'); inp.select();
+    const done = () => { $('btnCopyCheckin').textContent = '✓ Kopiert'; setTimeout(() => $('btnCopyCheckin').textContent = 'Kopieren', 1200); };
+    if (navigator.clipboard) navigator.clipboard.writeText(inp.value).then(done).catch(() => { document.execCommand('copy'); done(); });
+    else { document.execCommand('copy'); done(); }
+  });
   $('btnSaveEvent').addEventListener('click', async () => {
     const cats = Array.from($('catEditor').querySelectorAll('.admin-cat')).map(row => ({
       id: row.dataset.cat || null,
@@ -849,6 +959,7 @@
       active: $('evActive').checked,
       sharedQuota: $('evSharedOn').checked ? (parseInt($('evSharedQuota').value, 10) || 0) : null,
       feesOnOrganizer: $('evFeesOnOrganizer').checked,
+      sponsorLogos: editorSponsors.slice(),
       categories: cats
     };
     // Besitzer/Veranstalter zuweisen

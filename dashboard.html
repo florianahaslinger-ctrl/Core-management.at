@@ -302,6 +302,36 @@
       </div>
     </div>
 
+    <!-- Sponsoren-Logos (modular pro Ball) -->
+    <div style="margin-top:14px;border:1px solid var(--line);border-radius:10px;padding:12px 14px">
+      <label style="margin:0">Sponsoren-Logos auf dem Ticket</label>
+      <p class="hint" style="margin:6px 0 10px">Lade Sponsor-Logos hoch – sie erscheinen automatisch unten auf jeder Ticket-PDF, nebeneinander und passend skaliert. PNG (auch transparent) oder JPG. Leer lassen = keine Sponsoren.</p>
+      <div id="evSponsorList" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px"></div>
+      <input type="file" id="evSponsorFile" accept="image/png,image/jpeg,image/webp" multiple style="display:none">
+      <button type="button" class="btn btn-ghost btn-sm" id="btnAddSponsor">+ Logo hinzufügen</button>
+    </div>
+
+    <!-- Einlass-Scanner: Passwort + Link (nur bestehende Events) -->
+    <div id="evCheckinBox" style="margin-top:14px;border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:none">
+      <label style="margin:0">Einlass-Scanner (Passwort für dein Personal)</label>
+      <p class="hint" style="margin:6px 0 10px">Vergib ein Einlass-Passwort und gib es an dein Einlasspersonal weiter. Sie öffnen den Einlass-Link, geben nur dieses Passwort ein und können ausschließlich diesen Ball einchecken – kein Zugriff auf Umsätze, Bestellungen oder Einstellungen.</p>
+      <div id="evCheckinStatus" class="hint" style="margin-bottom:8px"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input type="text" id="evCheckinPw" placeholder="Einlass-Passwort (mind. 4 Zeichen)" autocomplete="off" style="flex:1 1 220px">
+        <button type="button" class="btn btn-gold btn-sm" id="btnSaveCheckinPw">Passwort speichern</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="btnClearCheckinPw">Deaktivieren</button>
+      </div>
+      <div id="evCheckinMsg" class="msg" style="margin-top:8px"></div>
+      <div id="evCheckinLinkBox" style="margin-top:10px;display:none">
+        <label style="margin:0">Einlass-Link für dein Personal</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px">
+          <input type="text" id="evCheckinUrl" readonly style="flex:1 1 260px">
+          <button type="button" class="btn btn-ghost btn-sm" id="btnCopyCheckin">Kopieren</button>
+          <a class="btn btn-ghost btn-sm" id="btnOpenCheckin" target="_blank" rel="noopener">Öffnen</a>
+        </div>
+      </div>
+    </div>
+
     <label style="margin-top:22px">Ticketkategorien</label>
     <div id="catEditor"></div>
     <button class="btn btn-ghost btn-sm" id="btnAddCat" style="margin-top:10px">+ Kategorie hinzufügen</button>

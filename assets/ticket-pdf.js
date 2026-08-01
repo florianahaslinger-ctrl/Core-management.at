@@ -116,7 +116,7 @@
       ' · ' + d.toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' }) + ' Uhr';
   }
 
-  function pageContent(t, order, imgName, idx, count) {
+  function pageContent(t, order, imgName, idx, count, sponsorOps) {
     const eur = new Intl.NumberFormat('de-AT', { style: 'currency', currency: 'EUR' });
     const line = (x, y, font, size, color, text) =>
       color + ' rg\nBT /' + font + ' ' + size + ' Tf ' + x + ' ' + y + ' Td (' + pdfText(text) + ') Tj ET\n';
@@ -170,20 +170,85 @@
     ];
     hints.forEach((h, i) => { s += line(60, 260 - i * 15, 'F2', 9, GRAY, '·  ' + h); });
 
+    // Sponsoren-Band (unten, falls Logos vorhanden)
+    if (sponsorOps) s += sponsorOps;
+
     return s;
+  }
+
+  /* --- Sponsor-Logos: laden, rastern (JPEG) und unten platzieren --- */
+
+  // Lädt data-URL-Logos in Canvas → JPEG-Bytes + Seitenverhältnis.
+  async function loadSponsorImages(logos) {
+    const out = [];
+    for (const src of (logos || [])) {
+      if (!src || typeof src !== 'string') continue;
+      try {
+        const img = new Image();
+        await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = src; });
+        const ar = img.naturalWidth / img.naturalHeight || 1;
+        const hPx = Math.min(220, img.naturalHeight || 220);
+        const wPx = Math.max(1, Math.round(hPx * ar));
+        const cv = document.createElement('canvas');
+        cv.width = wPx; cv.height = hPx;
+        const ctx = cv.getContext('2d');
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, wPx, hPx); // weißer Grund (Ticket ist weiß)
+        ctx.drawImage(img, 0, 0, wPx, hPx);
+        const jpg = dataURLtoBytes(cv.toDataURL('image/jpeg', 0.9));
+        out.push({ jpg, wPx: cv.width, hPx: cv.height, ar });
+      } catch (e) { /* fehlerhaftes Logo überspringen */ }
+    }
+    return out;
+  }
+
+  // Berechnet die Platzierung der Logos in einer zentrierten Reihe unten
+  // und liefert die PDF-Zeichenoperatoren (Bildnamen Sp0, Sp1, …).
+  function sponsorOps(imgs) {
+    if (!imgs.length) return '';
+    const LEFT = 60, RIGHT = 535, ROW_W = RIGHT - LEFT; // 475 pt nutzbar
+    const H = 42;            // Ziel-Höhe je Logo (pt)
+    const GAP = 26;          // Abstand zwischen Logos
+    const yBase = 70;        // Unterkante der Logoreihe
+    // Anzeigebreiten bei Zielhöhe
+    let widths = imgs.map(im => H * im.ar);
+    let total = widths.reduce((a, b) => a + b, 0) + GAP * (imgs.length - 1);
+    let h = H;
+    if (total > ROW_W) { // gesamte Reihe herunterskalieren, damit sie passt
+      const f = (ROW_W - GAP * (imgs.length - 1)) / (total - GAP * (imgs.length - 1));
+      widths = widths.map(w => w * f); h = H * f;
+      total = widths.reduce((a, b) => a + b, 0) + GAP * (imgs.length - 1);
+    }
+    let x = LEFT + (ROW_W - total) / 2;
+    let ops = '';
+    // Trennlinie + dezente Überschrift
+    ops += GOLD + ' RG 0.8 w\n' + LEFT + ' ' + (yBase + h + 26) + ' m ' + RIGHT + ' ' + (yBase + h + 26) + ' l S\n';
+    ops += GRAY + ' rg\nBT /F2 8 ' + 'Tf ' + LEFT + ' ' + (yBase + h + 12) + ' Td (' + pdfText('MIT FREUNDLICHER UNTERSTÜTZUNG VON') + ') Tj ET\n';
+    imgs.forEach((im, k) => {
+      const w = widths[k];
+      const yc = yBase + (h - h) / 2; // Unterkante
+      ops += 'q ' + w.toFixed(2) + ' 0 0 ' + h.toFixed(2) + ' ' + x.toFixed(2) + ' ' + yc.toFixed(2) + ' cm /Sp' + k + ' Do Q\n';
+      x += w + GAP;
+    });
+    return ops;
   }
 
   /* --- Öffentliche API --- */
 
-  function makePDF(order, tickets) {
+  async function makePDF(order, tickets, logos) {
     const objects = [];
     const pageRefs = [];
-    // Objekt 1: Catalog, 2: Pages, 3: F1, 4: F2, danach pro Ticket: Bild, Inhalt, Seite
-    const FIRST_DYNAMIC = 5;
+    // Sponsor-Logos einmalig laden (auf allen Seiten dieselben, als geteilte XObjects).
+    const sponsors = await loadSponsorImages(logos || (order && order.sponsorLogos) || []);
+    const spOps = sponsorOps(sponsors);
+    // Objekt 1: Catalog, 2: Pages, 3: F1, 4: F2,
+    // dann S geteilte Sponsor-Bilder, danach pro Ticket: QR-Bild, Inhalt, Seite.
+    const SPONSOR_BASE = 5;                       // erstes Sponsor-Bildobjekt
+    const FIRST_DYNAMIC = SPONSOR_BASE + sponsors.length;
+    // Ressourcen-Eintrag für die geteilten Sponsor-Bilder (auf jeder Seite gültig)
+    const spRes = sponsors.map((_s, k) => '/Sp' + k + ' ' + (SPONSOR_BASE + k) + ' 0 R').join(' ');
+
     tickets.forEach((t, i) => {
-      const imgObj = FIRST_DYNAMIC + i * 3;
-      const contentObj = imgObj + 1;
-      const pageObj = imgObj + 2;
+      const pageObj = FIRST_DYNAMIC + i * 3 + 2;
       pageRefs.push(pageObj + ' 0 R');
     });
 
@@ -191,6 +256,16 @@
     objects.push(['<< /Type /Pages /Kids [' + pageRefs.join(' ') + '] /Count ' + tickets.length + ' >>']);
     objects.push(['<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>']);
     objects.push(['<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>']);
+
+    // Geteilte Sponsor-Bildobjekte
+    sponsors.forEach((sp) => {
+      objects.push([
+        '<< /Type /XObject /Subtype /Image /Width ' + sp.wPx + ' /Height ' + sp.hPx +
+        ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + sp.jpg.length + ' >>\nstream\n',
+        sp.jpg,
+        '\nendstream'
+      ]);
+    });
 
     tickets.forEach((t, i) => {
       const imgObj = FIRST_DYNAMIC + i * 3;
@@ -202,13 +277,13 @@
         jpg,
         '\nendstream'
       ]);
-      const content = pageContent(t, order, 'Im' + i, i + 1, tickets.length);
+      const content = pageContent(t, order, 'Im' + i, i + 1, tickets.length, spOps);
       objects.push([
         '<< /Length ' + latin1(content).length + ' >>\nstream\n' + content + '\nendstream'
       ]);
       objects.push([
         '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] ' +
-        '/Resources << /Font << /F1 3 0 R /F2 4 0 R >> /XObject << /Im' + i + ' ' + imgObj + ' 0 R >> >> ' +
+        '/Resources << /Font << /F1 3 0 R /F2 4 0 R >> /XObject << /Im' + i + ' ' + imgObj + ' 0 R ' + spRes + ' >> >> ' +
         '/Contents ' + (imgObj + 1) + ' 0 R >>'
       ]);
     });
@@ -216,9 +291,19 @@
     return buildPDF(objects);
   }
 
-  function download(order, tickets) {
+  let sponsorResolver = null; // async (eventId) => [dataURL, …]
+  function setSponsorResolver(fn) { sponsorResolver = fn; }
+
+  async function download(order, tickets, logos) {
     tickets = tickets || order.tickets;
-    const bytes = makePDF(order, tickets);
+    // Logos: explizit übergeben, sonst am Order, sonst per Resolver über die Event-ID.
+    if (!logos) {
+      if (order && order.sponsorLogos) logos = order.sponsorLogos;
+      else if (sponsorResolver && order && order.eventId) {
+        try { logos = await sponsorResolver(order.eventId); } catch (e) { logos = []; }
+      }
+    }
+    const bytes = await makePDF(order, tickets, logos);
     const blob = new Blob([bytes], { type: 'application/pdf' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -229,5 +314,5 @@
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
   }
 
-  global.CMTicketPDF = { download, makePDF, qrCanvas, ticketUrl };
+  global.CMTicketPDF = { download, makePDF, qrCanvas, ticketUrl, setSponsorResolver };
 })(window);
