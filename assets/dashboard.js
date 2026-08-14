@@ -236,7 +236,8 @@
         ? '<div class="hint" style="margin-top:8px">Gesamtkontingent: <strong>' + ev.sharedQuota + '</strong> Tickets · ' + ev.sharedSold + ' verkauft · ' + ev.sharedRemaining + ' frei</div>'
         : '') +
       '<div class="hint" style="margin-top:10px">Shop-Link: <a href="tickets.html?event=' + ev.id + '" target="_blank" rel="noopener">tickets.html?event=' + ev.id + '</a>' +
-        (mySuper ? ' · Veranstalter: ' + (ev.ownerEmail ? esc(ev.ownerEmail) : '— (CORE)') : '') + '</div>' +
+        (mySuper ? ' · Veranstalter: ' + (ev.ownerEmail ? esc(ev.ownerEmail) : '— (CORE)') +
+          ((ev.coOwners && ev.coOwners.length) ? ' · +' + ev.coOwners.length + ' weitere' : '') : '') + '</div>' +
       '<div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">' +
       '<button class="btn btn-ghost btn-sm" data-edit="' + ev.id + '">Bearbeiten</button>' +
       '<button class="btn btn-ghost btn-sm" data-toggle="' + ev.id + '">' + (ev.active ? 'Deaktivieren' : 'Aktivieren') + '</button>' +
@@ -334,6 +335,8 @@
     } else {
       ciBox.style.display = 'none';
     }
+    // Weitere Veranstalter (Mit-Verwalter) – nur bestehende Events
+    renderCoOwners(ev);
     $('catEditor').innerHTML = (ev && ev.categories.length ? ev.categories : [null]).map(catRowHTML).join('');
     bindCatRemove();
     updateSharedUI();
@@ -767,6 +770,37 @@
     }
   }
 
+  /* ---- Weitere Veranstalter (Mit-Verwalter) im Event-Editor ---- */
+  // Sichtbar für Head-Admin und den Haupt-Veranstalter des Balls, nur bei
+  // bestehenden Events (braucht eine Event-ID). Auszahlung bleibt beim Besitzer.
+  async function renderCoOwners(ev) {
+    const box = $('evCoOwnersBox');
+    const me = S.currentUser();
+    const mayManage = ev && ev.id && (mySuper || ev.ownerEmail === me);
+    if (!mayManage) { box.style.display = 'none'; return; }
+    box.style.display = '';
+    msg($('evCoOwnerMsg'), '');
+    const list = $('evCoOwnerList');
+    list.innerHTML = '<p class="hint">Wird geladen …</p>';
+    try {
+      const emails = await S.getEventCoOwners(ev.id);
+      list.innerHTML = emails.length
+        ? emails.map(em =>
+            '<div style="display:flex;gap:10px;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05)">' +
+            '<span style="flex:1">' + esc(em) + '</span>' +
+            '<button class="btn btn-danger btn-sm" data-cormrm="' + esc(em) + '">Entfernen</button>' +
+            '</div>').join('')
+        : '<p class="hint">Noch keine weiteren Veranstalter zugewiesen.</p>';
+      list.querySelectorAll('[data-cormrm]').forEach(b => b.addEventListener('click', async () => {
+        if (!confirm(b.dataset.cormrm + ' als Veranstalter von diesem Ball entfernen?')) return;
+        try { await S.removeEventCoOwner(ev.id, b.dataset.cormrm); await renderCoOwners(ev); }
+        catch (e) { msg($('evCoOwnerMsg'), e.message, 'error'); }
+      }));
+    } catch (e) {
+      list.innerHTML = '<p class="hint">' + esc(e.message) + '</p>';
+    }
+  }
+
   function renderOverview() { renderStats(); chartSales(); chartRevenue(); renderQuota(); }
   function populateStatEvents() {
     const sel = $('statEvent'); if (!sel) return;
@@ -890,6 +924,18 @@
       renderAdmins();
     } catch (e) { msg($('adminMsg'), e.message, 'error'); }
   });
+  $('btnAddCoOwner').addEventListener('click', async () => {
+    const id = $('evId').value;
+    if (!id) return;
+    const ev = events.find(e => e.id === id) || { id: id, ownerEmail: null };
+    try {
+      await S.addEventCoOwner(id, $('evCoOwnerEmail').value);
+      $('evCoOwnerEmail').value = '';
+      msg($('evCoOwnerMsg'), 'Veranstalter hinzugefügt. Er hat ab sofort vollen Zugriff auf diesen Ball.', 'ok');
+      await renderCoOwners(ev);
+    } catch (e) { msg($('evCoOwnerMsg'), e.message, 'error'); }
+  });
+  $('evCoOwnerEmail').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('btnAddCoOwner').click(); } });
   $('btnCopyShop').addEventListener('click', () => {
     const inp = $('evShopUrl'); inp.select();
     const done = () => { $('btnCopyShop').textContent = '✓ Kopiert'; setTimeout(() => $('btnCopyShop').textContent = 'Kopieren', 1200); };

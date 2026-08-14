@@ -94,7 +94,7 @@
     /* --- Events & Verfügbarkeit --- */
     async getEvents(includeInactive) {
       let q = sb.from('events')
-        .select('id,name,date,location,description,active,layout,owner_email,shared_quota,fees_on_organizer,sponsor_logos,categories(id,name,price,quota,max_per_order,description,active,sort,seating)')
+        .select('id,name,date,location,description,active,layout,owner_email,shared_quota,fees_on_organizer,sponsor_logos,event_owners(email),categories(id,name,price,quota,max_per_order,description,active,sort,seating)')
         .order('date', { ascending: true });
       const { data, error } = await q;
       if (error) throw new Error(error.message);
@@ -116,6 +116,8 @@
             id: e.id, name: e.name, date: e.date, location: e.location,
             description: e.description, active: e.active, layout: e.layout || null,
             ownerEmail: e.owner_email || null,
+            // Zusätzliche Veranstalter (Mit-Verwalter, ohne Auszahlung)
+            coOwners: Array.isArray(e.event_owners) ? e.event_owners.map(o => o.email).filter(Boolean) : [],
             sharedQuota: sharedQuota, sharedSold: sharedSold, sharedRemaining: sharedRemaining,
             feesOnOrganizer: !!e.fees_on_organizer,
             sponsorLogos: Array.isArray(e.sponsor_logos) ? e.sponsor_logos : [],
@@ -351,7 +353,9 @@
       const evs = await this.getEvents(includeInactive);
       if (role === 'super_admin') return evs;
       const me = this.currentUser();
-      return evs.filter(e => e.ownerEmail === me);
+      // Veranstalter sehen eigene Bälle UND Bälle, bei denen sie als
+      // Mit-Veranstalter eingetragen sind.
+      return evs.filter(e => e.ownerEmail === me || (e.coOwners || []).includes(me));
     },
 
     // Veranstalter-Verwaltung (nur Head-Admin)
@@ -372,6 +376,27 @@
     },
     async setEventOwner(eventId, ownerEmail) {
       const { error } = await sb.from('events').update({ owner_email: ownerEmail ? normEmail(ownerEmail) : null }).eq('id', eventId);
+      if (error) throw new Error(error.message);
+    },
+
+    /* --- Mit-Veranstalter je Ball (zusätzliche Verwalter, keine Auszahlung) --- */
+    async getEventCoOwners(eventId) {
+      const { data, error } = await sb.from('event_owners').select('email').eq('event_id', eventId).order('email');
+      if (error) throw new Error(error.message);
+      return (data || []).map(o => o.email);
+    },
+    async addEventCoOwner(eventId, email) {
+      email = normEmail(email);
+      if (!validEmail(email)) throw new Error('Bitte eine gültige E-Mail-Adresse eingeben.');
+      const { error } = await sb.from('event_owners').insert({ event_id: eventId, email });
+      if (error) {
+        // Doppelte Zuweisung freundlich melden
+        if (error.code === '23505') throw new Error('Diese E-Mail ist bereits als Veranstalter zugewiesen.');
+        throw new Error(error.message);
+      }
+    },
+    async removeEventCoOwner(eventId, email) {
+      const { error } = await sb.from('event_owners').delete().eq('event_id', eventId).eq('email', normEmail(email));
       if (error) throw new Error(error.message);
     },
 

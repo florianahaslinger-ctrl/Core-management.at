@@ -288,9 +288,21 @@
     </div>
 
     <div class="super-only" style="margin-top:14px">
-      <label>Veranstalter (Besitzer dieses Balls)</label>
+      <label>Haupt-Veranstalter (Besitzer &amp; Auszahlung)</label>
       <select id="evOwner"><option value="">— Head-Admin (CORE) —</option></select>
-      <p class="hint" style="margin-top:6px">Der zugewiesene Veranstalter sieht und verwaltet nur diesen Ball.</p>
+      <p class="hint" style="margin-top:6px">Der Haupt-Veranstalter sieht und verwaltet diesen Ball – und nur auf sein Stripe-Konto läuft die Auszahlung.</p>
+    </div>
+
+    <!-- Weitere Veranstalter (Mit-Verwalter, keine Auszahlung) – nur bestehende Events -->
+    <div id="evCoOwnersBox" style="margin-top:14px;border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:none">
+      <label style="margin:0">Weitere Veranstalter (Zugriff auf diesen Ball)</label>
+      <p class="hint" style="margin:6px 0 10px">Diese E-Mails erhalten <strong>vollen Zugriff</strong> auf diesen Ball (Umsatz, Bestellungen, Einlass, Einstellungen) – aber <strong>keine Auszahlung</strong>. Das Geld läuft weiterhin nur auf das Konto des Haupt-Veranstalters. Jede E-Mail muss zuvor unter „Veranstalter &amp; Zugänge" als Veranstalter angelegt sein, damit sich die Person einloggen kann.</p>
+      <div id="evCoOwnerList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
+      <div class="row" style="gap:8px">
+        <div style="flex:1 1 220px"><input type="email" id="evCoOwnerEmail" placeholder="mit-veranstalter@example.at"></div>
+        <div style="flex:0 0 auto"><button type="button" class="btn btn-ghost btn-sm" id="btnAddCoOwner">Hinzufügen</button></div>
+      </div>
+      <p class="hint" id="evCoOwnerMsg" style="margin:8px 0 0"></p>
     </div>
 
     <div id="evShopLink" style="margin-top:14px;display:none">
