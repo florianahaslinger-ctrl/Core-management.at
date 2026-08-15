@@ -201,33 +201,78 @@
     return out;
   }
 
-  // Berechnet die Platzierung der Logos in einer zentrierten Reihe unten
-  // und liefert die PDF-Zeichenoperatoren (Bildnamen Sp0, Sp1, …).
+  // Platziert die Logos in einem automatischen, mehrzeiligen Raster unten
+  // auf der Seite und liefert die PDF-Zeichenoperatoren (Bildnamen Sp0, Sp1, …).
+  //
+  // Vorgehen (überlappungsfrei, auch bei bis zu 25 Logos):
+  //  1. Logos zeilenweise „einregalen" (shelf packing): bei Zielhöhe H werden
+  //     Logos in eine Zeile gelegt, bis die Breite voll ist – dann neue Zeile.
+  //  2. Per Binärsuche wird die GRÖSSTE Höhe H gesucht, bei der der gesamte
+  //     Block (inkl. fester Zeilenabstände) noch ins untere Band passt. Das ist
+  //     robust für jede Anzahl (1–25) und jedes Seitenverhältnis.
+  //  3. Jede Zeile wird horizontal zentriert; sehr breite Einzel-Logos werden
+  //     auf die Bandbreite geklemmt und in der Zeile vertikal zentriert.
   function sponsorOps(imgs) {
     if (!imgs.length) return '';
     const LEFT = 60, RIGHT = 535, ROW_W = RIGHT - LEFT; // 475 pt nutzbar
-    const H = 42;            // Ziel-Höhe je Logo (pt)
-    const GAP = 26;          // Abstand zwischen Logos
-    const yBase = 70;        // Unterkante der Logoreihe
-    // Anzeigebreiten bei Zielhöhe
-    let widths = imgs.map(im => H * im.ar);
-    let total = widths.reduce((a, b) => a + b, 0) + GAP * (imgs.length - 1);
-    let h = H;
-    if (total > ROW_W) { // gesamte Reihe herunterskalieren, damit sie passt
-      const f = (ROW_W - GAP * (imgs.length - 1)) / (total - GAP * (imgs.length - 1));
-      widths = widths.map(w => w * f); h = H * f;
-      total = widths.reduce((a, b) => a + b, 0) + GAP * (imgs.length - 1);
+    const GAP_X = 20;        // horizontaler Abstand zwischen Logos
+    const GAP_Y = 12;        // vertikaler Abstand zwischen Zeilen
+    const H_MAX = 42;        // Ziel-/Maximalhöhe je Logo (pt) bei wenigen Logos
+    const BAND_BOTTOM = 56;  // Unterkante des Logo-Bands
+    const BAND_TOP_MAX = 178;// max. Oberkante der Logos (darüber bleibt Platz für die Überschrift)
+    const BAND_H = BAND_TOP_MAX - BAND_BOTTOM;
+
+    // Zeilen bei gegebener Höhe H packen. Liefert Zeilen mit Zellen {k, ar}.
+    function pack(H) {
+      const rows = []; let cur = []; let curW = 0;
+      imgs.forEach((im, k) => {
+        const w = Math.min(H * im.ar, ROW_W); // sehr breite Logos auf Bandbreite klemmen
+        if (cur.length === 0) { cur = [{ k, ar: im.ar }]; curW = w; }
+        else if (curW + GAP_X + w <= ROW_W) { cur.push({ k, ar: im.ar }); curW += GAP_X + w; }
+        else { rows.push(cur); cur = [{ k, ar: im.ar }]; curW = w; }
+      });
+      if (cur.length) rows.push(cur);
+      return rows;
     }
-    let x = LEFT + (ROW_W - total) / 2;
+
+    // Binärsuche nach der größten Höhe, deren Block noch ins Band passt.
+    // fits(H) ist praktisch monoton (kleinere Logos → weniger/niedrigere Zeilen).
+    function fits(H) {
+      const rows = pack(H);
+      return rows.length * H + (rows.length - 1) * GAP_Y <= BAND_H;
+    }
+    let lo = 1, hi = H_MAX, H = 1;
+    if (fits(H_MAX)) { H = H_MAX; }        // wenige Logos: volle Zielhöhe
+    else {
+      for (let i = 0; i < 34; i++) {       // sonst größtes passendes H suchen
+        const mid = (lo + hi) / 2;
+        if (fits(mid)) { H = mid; lo = mid; } else { hi = mid; }
+      }
+    }
+    const rows = pack(H);
+    const blockH = rows.length * H + (rows.length - 1) * GAP_Y;
+
+    const yTopBlock = BAND_BOTTOM + blockH; // Oberkante des obersten Logos
     let ops = '';
-    // Trennlinie + dezente Überschrift
-    ops += GOLD + ' RG 0.8 w\n' + LEFT + ' ' + (yBase + h + 26) + ' m ' + RIGHT + ' ' + (yBase + h + 26) + ' l S\n';
-    ops += GRAY + ' rg\nBT /F2 8 ' + 'Tf ' + LEFT + ' ' + (yBase + h + 12) + ' Td (' + pdfText('MIT FREUNDLICHER UNTERSTÜTZUNG VON') + ') Tj ET\n';
-    imgs.forEach((im, k) => {
-      const w = widths[k];
-      const yc = yBase + (h - h) / 2; // Unterkante
-      ops += 'q ' + w.toFixed(2) + ' 0 0 ' + h.toFixed(2) + ' ' + x.toFixed(2) + ' ' + yc.toFixed(2) + ' cm /Sp' + k + ' Do Q\n';
-      x += w + GAP;
+    // Dezente Überschrift + Trennlinie oberhalb des Rasters
+    ops += GOLD + ' RG 0.8 w\n' + LEFT + ' ' + (yTopBlock + 24) + ' m ' + RIGHT + ' ' + (yTopBlock + 24) + ' l S\n';
+    ops += GRAY + ' rg\nBT /F2 8 Tf ' + LEFT + ' ' + (yTopBlock + 10) + ' Td (' + pdfText('MIT FREUNDLICHER UNTERSTÜTZUNG VON') + ') Tj ET\n';
+
+    const R = rows.length;
+    rows.forEach((row, r) => {
+      // Zeile r von oben (0) nach unten; Unterkante dieser Zeile:
+      const yLower = BAND_BOTTOM + (R - 1 - r) * (H + GAP_Y);
+      const widths = row.map(c => Math.min(H * c.ar, ROW_W));
+      const rowTotal = widths.reduce((a, b) => a + b, 0) + GAP_X * (row.length - 1);
+      let x = LEFT + (ROW_W - rowTotal) / 2; // Zeile horizontal zentrieren
+      row.forEach((c, i) => {
+        let w = widths[i], h = H, y = yLower;
+        if (w >= ROW_W && c.ar > ROW_W / H) { // überbreites Logo: Höhe reduzieren, vertikal zentrieren
+          h = ROW_W / c.ar; y = yLower + (H - h) / 2;
+        }
+        ops += 'q ' + w.toFixed(2) + ' 0 0 ' + h.toFixed(2) + ' ' + x.toFixed(2) + ' ' + y.toFixed(2) + ' cm /Sp' + c.k + ' Do Q\n';
+        x += w + GAP_X;
+      });
     });
     return ops;
   }
