@@ -369,8 +369,9 @@
   /* ---- Sponsoren-Logos im Event-Editor ---- */
   let editorSponsors = []; // Array von data-URLs
 
-  // Bild aus Datei lesen und auf handliche Größe verkleinern (max. 480px hoch),
-  // damit die Logos nicht die Event-Zeile aufblähen. Ausgabe als data-URL.
+  // Bild aus Datei lesen und auf handliche Größe verkleinern (max. 240px hoch),
+  // damit die Logos die Event-Daten nicht aufblähen – auch bei bis zu 25 Stück.
+  // Für das Ticket-PDF (rastert bei ~220px) reicht das qualitativ vollständig aus.
   function fileToLogo(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -379,7 +380,7 @@
         const img = new Image();
         img.onerror = () => reject(new Error('Kein gültiges Bild.'));
         img.onload = () => {
-          const maxH = 480, maxW = 960;
+          const maxH = 240, maxW = 480;
           let w = img.naturalWidth, h = img.naturalHeight;
           const scale = Math.min(1, maxH / h, maxW / w);
           w = Math.max(1, Math.round(w * scale)); h = Math.max(1, Math.round(h * scale));
@@ -949,7 +950,7 @@
     const files = Array.from(e.target.files || []);
     e.target.value = ''; // gleiche Datei erneut wählbar
     for (const f of files) {
-      if (editorSponsors.length >= 8) { msg($('evMsg'), 'Maximal 8 Sponsor-Logos pro Ball.', 'error'); break; }
+      if (editorSponsors.length >= 25) { msg($('evMsg'), 'Maximal 25 Sponsor-Logos pro Ball.', 'error'); break; }
       try { editorSponsors.push(await fileToLogo(f)); }
       catch (err) { msg($('evMsg'), 'Logo „' + f.name + '“ konnte nicht geladen werden: ' + err.message, 'error'); }
     }
