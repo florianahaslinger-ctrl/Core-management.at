@@ -277,9 +277,117 @@
     return ops;
   }
 
+  /* --- Eigenes Ticket-Design (pro Event) ---
+     Ist am Event ein custom_ticket hinterlegt ({front,back} als Bild-
+     Data-URLs), wird das Ticket im Design des Veranstalters erzeugt und
+     nur der individuelle QR-Code + Ticketcode darübergelegt. Seitenformat
+     entspricht dem Design (Querformat), damit nichts verzerrt wird. */
+
+  const CT_W = 595.276, CT_H = 204.094;   // Ticket-Design-Seitenmaß (pt)
+
+  // Bild-Data-URL laden → JPEG-Bytes + Pixelmaße (für das PDF-XObject).
+  async function loadFullImage(src) {
+    const img = new Image();
+    await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = src; });
+    const w = img.naturalWidth || 1, h = img.naturalHeight || 1;
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0, w, h);
+    const jpg = dataURLtoBytes(cv.toDataURL('image/jpeg', 0.9));
+    return { jpg, wPx: cv.width, hPx: cv.height };
+  }
+
+  function imgObject(im) {
+    return [
+      '<< /Type /XObject /Subtype /Image /Width ' + im.wPx + ' /Height ' + im.hPx +
+      ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + im.jpg.length + ' >>\nstream\n',
+      im.jpg, '\nendstream'
+    ];
+  }
+
+  async function makeCustomPDF(order, tickets, ct) {
+    const front = await loadFullImage(ct.front);
+    const back = ct.back ? await loadFullImage(ct.back) : null;
+    const objects = [];
+
+    // Feste Grundobjekte: 1 Catalog, 2 Pages, 3 F1, 4 F2, 5 Front, (6 Back)
+    const FRONT_OBJ = 5;
+    const BACK_OBJ = back ? 6 : 0;
+    const FIRST = back ? 7 : 6;
+    const perTicket = back ? 5 : 3; // QR, Front-Content, Front-Page (+ Back-Content, Back-Page)
+
+    // QR-Box unten-links-Mitte (im leeren Bereich des Designs)
+    const QS = 50, QX = 157, QY_TOP = 130;              // top-down
+    const qyPdf = CT_H - (QY_TOP + QS);                 // bottom-up
+    const BX = 151, BW = 62, BY_TOP = 124, BH = 72;
+    const byPdf = CT_H - (BY_TOP + BH);
+
+    const pageRefs = [];
+    tickets.forEach((_t, i) => {
+      const base = FIRST + i * perTicket;
+      pageRefs.push((base + 2) + ' 0 R');               // Front-Seite
+      if (back) pageRefs.push((base + 4) + ' 0 R');     // Rück-Seite
+    });
+
+    objects.push(['<< /Type /Catalog /Pages 2 0 R >>']);
+    objects.push(['<< /Type /Pages /Kids [' + pageRefs.join(' ') + '] /Count ' + pageRefs.length + ' >>']);
+    objects.push(['<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>']);
+    objects.push(['<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>']);
+    objects.push(imgObject(front));
+    if (back) objects.push(imgObject(back));
+
+    const mediaBox = '[0 0 ' + CT_W.toFixed(3) + ' ' + CT_H.toFixed(3) + ']';
+
+    tickets.forEach((t, i) => {
+      const base = FIRST + i * perTicket;
+      const qrObj = base;
+      // QR-Bild für dieses Ticket
+      const cv = qrCanvas(ticketUrl(t.code), 400);
+      const jpg = dataURLtoBytes(cv.toDataURL('image/jpeg', 0.92));
+      objects.push([
+        '<< /Type /XObject /Subtype /Image /Width ' + cv.width + ' /Height ' + cv.height +
+        ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + jpg.length + ' >>\nstream\n',
+        jpg, '\nendstream'
+      ]);
+      // Front-Content: Design-Bild + weiße QR-Box + QR + Ticketcode
+      const code = pdfText(t.code);
+      const codeW = t.code.length * 7.5 * 0.58;         // grobe Textbreite (Helvetica-Bold 7.5)
+      const codeX = BX + Math.max(0, (BW - codeW) / 2);
+      let fc = '';
+      fc += 'q ' + CT_W.toFixed(2) + ' 0 0 ' + CT_H.toFixed(2) + ' 0 0 cm /Fr Do Q\n';
+      fc += '1 1 1 rg ' + BX + ' ' + byPdf.toFixed(2) + ' ' + BW + ' ' + BH + ' re f\n';
+      fc += '0.788 0.659 0.298 RG 0.8 w ' + BX + ' ' + byPdf.toFixed(2) + ' ' + BW + ' ' + BH + ' re S\n';
+      fc += 'q ' + QS + ' 0 0 ' + QS + ' ' + QX + ' ' + qyPdf.toFixed(2) + ' cm /Qr Do Q\n';
+      fc += '0.05 0.05 0.05 rg BT /F1 7.5 Tf ' + codeX.toFixed(2) + ' ' + (byPdf + 6).toFixed(2) + ' Td (' + code + ') Tj ET\n';
+      objects.push(['<< /Length ' + latin1(fc).length + ' >>\nstream\n' + fc + '\nendstream']);
+      // Front-Page
+      objects.push([
+        '<< /Type /Page /Parent 2 0 R /MediaBox ' + mediaBox +
+        ' /Resources << /Font << /F1 3 0 R /F2 4 0 R >> /XObject << /Fr ' + FRONT_OBJ + ' 0 R /Qr ' + qrObj + ' 0 R >> >> ' +
+        '/Contents ' + (base + 1) + ' 0 R >>'
+      ]);
+      if (back) {
+        const bc = 'q ' + CT_W.toFixed(2) + ' 0 0 ' + CT_H.toFixed(2) + ' 0 0 cm /Bk Do Q\n';
+        objects.push(['<< /Length ' + latin1(bc).length + ' >>\nstream\n' + bc + '\nendstream']);
+        objects.push([
+          '<< /Type /Page /Parent 2 0 R /MediaBox ' + mediaBox +
+          ' /Resources << /XObject << /Bk ' + BACK_OBJ + ' 0 R >> >> ' +
+          '/Contents ' + (base + 3) + ' 0 R >>'
+        ]);
+      }
+    });
+
+    return buildPDF(objects);
+  }
+
   /* --- Öffentliche API --- */
 
-  async function makePDF(order, tickets, logos) {
+  async function makePDF(order, tickets, logos, customTicket) {
+    // Eigenes Design pro Event hat Vorrang vor der Standardvorlage.
+    if (customTicket && customTicket.front) {
+      return makeCustomPDF(order, tickets, customTicket);
+    }
     const objects = [];
     const pageRefs = [];
     // Sponsor-Logos einmalig laden (auf allen Seiten dieselben, als geteilte XObjects).
@@ -338,17 +446,24 @@
 
   let sponsorResolver = null; // async (eventId) => [dataURL, …]
   function setSponsorResolver(fn) { sponsorResolver = fn; }
+  let customTicketResolver = null; // async (eventId) => { front, back } | null
+  function setCustomTicketResolver(fn) { customTicketResolver = fn; }
 
   async function download(order, tickets, logos) {
     tickets = tickets || order.tickets;
-    // Logos: explizit übergeben, sonst am Order, sonst per Resolver über die Event-ID.
-    if (!logos) {
+    // Eigenes Ticket-Design (falls für das Event hinterlegt) nachladen.
+    let customTicket = order && order.customTicket;
+    if (!customTicket && customTicketResolver && order && order.eventId) {
+      try { customTicket = await customTicketResolver(order.eventId); } catch (e) { customTicket = null; }
+    }
+    // Logos nur laden, wenn kein eigenes Design greift (dort sind Sponsoren bereits drauf).
+    if (!logos && !(customTicket && customTicket.front)) {
       if (order && order.sponsorLogos) logos = order.sponsorLogos;
       else if (sponsorResolver && order && order.eventId) {
         try { logos = await sponsorResolver(order.eventId); } catch (e) { logos = []; }
       }
     }
-    const bytes = await makePDF(order, tickets, logos);
+    const bytes = await makePDF(order, tickets, logos, customTicket);
     const blob = new Blob([bytes], { type: 'application/pdf' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -359,5 +474,5 @@
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
   }
 
-  global.CMTicketPDF = { download, makePDF, qrCanvas, ticketUrl, setSponsorResolver };
+  global.CMTicketPDF = { download, makePDF, qrCanvas, ticketUrl, setSponsorResolver, setCustomTicketResolver };
 })(window);

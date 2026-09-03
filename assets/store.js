@@ -62,6 +62,10 @@
       if (global.CMTicketPDF && typeof global.CMTicketPDF.setSponsorResolver === 'function') {
         global.CMTicketPDF.setSponsorResolver(id => Store.eventSponsorLogos(id));
       }
+      // Ticket-PDF: eigenes Ticket-Design je Event nachladen (falls hinterlegt).
+      if (global.CMTicketPDF && typeof global.CMTicketPDF.setCustomTicketResolver === 'function') {
+        global.CMTicketPDF.setCustomTicketResolver(id => Store.eventCustomTicket(id));
+      }
       return session;
     },
     client() { return sb; },
@@ -263,6 +267,15 @@
       const { data, error } = await sb.from('events').select('sponsor_logos').eq('id', eventId).maybeSingle();
       if (error) return [];
       return Array.isArray(data && data.sponsor_logos) ? data.sponsor_logos : [];
+    },
+
+    // Eigenes Ticket-Design eines Events (für die Ticket-PDF). Öffentlich lesbar.
+    // Liefert { front, back } (Bild-Data-URLs) oder null (= Standardvorlage).
+    async eventCustomTicket(eventId) {
+      if (!eventId) return null;
+      const { data, error } = await sb.from('events').select('custom_ticket').eq('id', eventId).maybeSingle();
+      if (error || !data || !data.custom_ticket || !data.custom_ticket.front) return null;
+      return data.custom_ticket;
     },
 
     /* --- Einlass-Scanner (passwortgeschützt, pro Event) --- */
