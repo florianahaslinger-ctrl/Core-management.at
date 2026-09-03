@@ -317,10 +317,10 @@
     const FIRST = back ? 7 : 6;
     const perTicket = back ? 5 : 3; // QR, Front-Content, Front-Page (+ Back-Content, Back-Page)
 
-    // QR-Box unten-links-Mitte (im leeren Bereich des Designs)
-    const QS = 50, QX = 157, QY_TOP = 130;              // top-down
+    // QR-Box oben rechts, über dem Einlass-Block
+    const QS = 48, QX = 497, QY_TOP = 48;               // top-down
     const qyPdf = CT_H - (QY_TOP + QS);                 // bottom-up
-    const BX = 151, BW = 62, BY_TOP = 124, BH = 72;
+    const BX = 491, BW = 60, BY_TOP = 44, BH = 66;
     const byPdf = CT_H - (BY_TOP + BH);
 
     const pageRefs = [];
