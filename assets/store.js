@@ -99,6 +99,10 @@
     async getEvents(includeInactive) {
       let q = sb.from('events')
         .select('id,name,date,location,description,active,layout,owner_email,shared_quota,fees_on_organizer,sponsor_logos,event_owners(email),categories(id,name,price,quota,max_per_order,description,active,sort,seating)')
+        // Nur CORE-eigene Bälle (storefront IS NULL) – gebrandete Fremd-Shops
+        // (z. B. Focus Events, storefront='focus') teilen sich zwar das Backend,
+        // dürfen hier aber nicht erscheinen.
+        .is('storefront', null)
         .order('date', { ascending: true });
       const { data, error } = await q;
       if (error) throw new Error(error.message);
