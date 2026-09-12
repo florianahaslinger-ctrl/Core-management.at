@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anmeldung nicht möglich – CORE Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="assets/shop.css">
+</head>
+<body>
+
+<nav class="shop-nav">
+  <a href="index.html" class="logo"><span>CORE</span> MANAGEMENT</a>
+</nav>
+
+<div class="wrap">
+  <div class="page-head">
+    <div class="eyebrow">Anmeldung über promnight</div>
+    <h1>Anmeldung <em>nicht möglich.</em></h1>
+  </div>
+
+  <div class="card" style="max-width:560px">
+    <p class="sub" id="msg">Der Zugang konnte nicht bestätigt werden.</p>
+    <div style="display:flex;gap:10px;margin-top:22px;flex-wrap:wrap">
+      <a class="btn btn-gold" href="https://www.promnight.at">Zurück zu promnight</a>
+      <a class="btn btn-ghost" href="index.html">Zur Hauptseite</a>
+    </div>
+  </div>
+</div>
+
+<footer class="shop-footer">
+  <div>© CORE Management · Events &amp; Entertainment Austria</div>
+  <div style="display:flex;gap:18px;flex-wrap:wrap">
+    <a href="impressum.html">Impressum</a>
+    <a href="datenschutz.html">Datenschutz</a>
+    <a href="index.html">Zur Hauptseite</a>
+  </div>
+</footer>
+
+<script>
+  // Grund-Codes werden von der Edge Function sso-promnight gesetzt (§10).
+  // Es werden bewusst KEINE technischen Details angezeigt.
+  var MSG = {
+    ungueltig:  'Der Zugang konnte nicht bestätigt werden (ungültige Signatur oder unbekannter Schlüssel). ' +
+                'Es wurde kein Konto angelegt und keine Anmeldung durchgeführt. Bitte starte den Vorgang im promnight-Dashboard erneut.',
+    abgelaufen: 'Dieser Zugang ist abgelaufen oder wurde bereits verwendet. ' +
+                'Bitte starte den Vorgang im promnight-Dashboard erneut – dort wird ein neuer Zugang erzeugt.',
+    abgelehnt:  'Der Zugang wurde abgelehnt. Bitte wende dich an promnight, wenn das unerwartet ist.',
+    technik:    'Beim Anmeldedienst besteht gerade eine technische Störung. Bitte versuche es in einigen Minuten erneut.'
+  };
+  var grund = new URLSearchParams(location.search).get('grund');
+  var el = document.getElementById('msg');
+  if (el && MSG[grund]) el.textContent = MSG[grund];
+</script>
+</body>
+</html>

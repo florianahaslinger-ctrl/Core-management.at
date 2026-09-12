@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Konto verknüpfen – CORE Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="assets/shop.css">
+<script src="assets/supabase.js"></script>
+</head>
+<body>
+
+<nav class="shop-nav">
+  <a href="index.html" class="logo"><span>CORE</span> MANAGEMENT</a>
+</nav>
+
+<div class="wrap">
+  <div class="page-head">
+    <div class="eyebrow">Anmeldung über promnight</div>
+    <h1>Konto <em>verknüpfen.</em></h1>
+    <p>Für deine E-Mail-Adresse besteht bereits ein Konto bei CORE Management. Aus Sicherheitsgründen
+       verknüpfen wir es nicht automatisch mit promnight – bitte bestätige den Zugriff ausdrücklich,
+       indem du dich mit genau dieser E-Mail-Adresse anmeldest.</p>
+  </div>
+
+  <div class="card" style="max-width:560px">
+    <div class="msg" id="topMsg"></div>
+
+    <!-- Schritt 1: Anmelden -->
+    <div id="stepLogin" style="display:none">
+      <label for="email">E-Mail-Adresse (wie bei promnight hinterlegt)</label>
+      <input type="email" id="email" placeholder="deine@email.at" autocomplete="email">
+      <div class="msg" id="msg1"></div>
+      <div style="display:flex;gap:10px;margin-top:18px">
+        <button class="btn btn-gold" id="btnSend">Code senden</button>
+        <a class="btn btn-ghost" href="https://www.promnight.at">Abbrechen</a>
+      </div>
+    </div>
+
+    <!-- Schritt 2: Code -->
+    <div id="stepCode" style="display:none">
+      <div class="msg info show" id="sentInfo"></div>
+      <label for="code">Verifizierungscode (aus der E-Mail)</label>
+      <input type="text" id="code" class="code-input" maxlength="8" inputmode="numeric" autocomplete="one-time-code" placeholder="••••••">
+      <div class="msg" id="msg2"></div>
+      <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">
+        <button class="btn btn-gold" id="btnVerify">Bestätigen</button>
+        <button class="btn btn-ghost btn-sm" id="btnBack">E-Mail ändern</button>
+      </div>
+      <p class="hint" style="margin-top:10px">Tipp: Du kannst auch einfach den Anmelde-Link in der E-Mail anklicken.</p>
+    </div>
+
+    <!-- Schritt 3: Verknüpfung bestätigen -->
+    <div id="stepConfirm" style="display:none">
+      <p class="sub" id="confirmWho"></p>
+      <p class="sub">Damit erhält dein promnight-Zugang Zugriff auf dieses Konto und den zugehörigen Ball
+         bei CORE Management.</p>
+      <div class="msg" id="msg3"></div>
+      <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">
+        <button class="btn btn-gold" id="btnConfirm">Verknüpfen &amp; fortfahren</button>
+        <button class="btn btn-ghost btn-sm" id="btnLogout">Als andere:r anmelden</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="shop-footer">
+  <div>© CORE Management · Events &amp; Entertainment Austria</div>
+  <div style="display:flex;gap:18px;flex-wrap:wrap">
+    <a href="impressum.html">Impressum</a>
+    <a href="datenschutz.html">Datenschutz</a>
+    <a href="index.html">Zur Hauptseite</a>
+  </div>
+</footer>
+
+<script src="assets/store.js"></script>
+<script>
+(async function () {
+  var S = window.CMStore;
+  var $ = function (id) { return document.getElementById(id); };
+  function show(step) {
+    ['stepLogin', 'stepCode', 'stepConfirm'].forEach(function (s) {
+      $(s).style.display = (s === step) ? '' : 'none';
+    });
+  }
+  function msg(el, text, kind) {
+    el.textContent = text || '';
+    el.className = 'msg' + (text ? ' show ' + (kind || 'info') : '');
+  }
+
+  // Verknüpfungs-Token über den Magic-Link-Umweg hinweg festhalten:
+  // der E-Mail-Redirect verliert den ?req-Parameter, daher zusätzlich in
+  // localStorage sichern.
+  var params = new URLSearchParams(location.search);
+  var req = params.get('req') || null;
+  try {
+    if (req) localStorage.setItem('pn_link_req', req);
+    else req = localStorage.getItem('pn_link_req');
+  } catch (_) {}
+
+  if (!req) {
+    show('stepLogin');
+    $('stepLogin').style.display = 'none';
+    msg($('topMsg'), 'Kein gültiger Verknüpfungs-Vorgang. Bitte starte die Anmeldung erneut im promnight-Dashboard.', 'error');
+    return;
+  }
+
+  await S.init();
+  var gateEmail = '';
+
+  function toConfirm() {
+    var who = S.currentUser();
+    $('confirmWho').textContent = 'Angemeldet als ' + who + '.';
+    show('stepConfirm');
+  }
+
+  // Bereits angemeldet (z. B. nach Klick auf den Magic-Link)? -> direkt bestätigen.
+  if (S.currentUser()) { toConfirm(); }
+  else { show('stepLogin'); }
+
+  $('btnSend').addEventListener('click', async function () {
+    try {
+      $('btnSend').disabled = true;
+      gateEmail = S.normEmail($('email').value);
+      msg($('msg1'), 'E-Mail wird gesendet …', 'info');
+      await S.requestCode(gateEmail);
+      $('sentInfo').textContent = 'E-Mail an ' + gateEmail + ' gesendet – Link anklicken oder Code eingeben.';
+      msg($('msg1'), '');
+      show('stepCode');
+      $('code').focus();
+    } catch (e) { msg($('msg1'), e.message, 'error'); }
+    finally { $('btnSend').disabled = false; }
+  });
+
+  $('btnVerify').addEventListener('click', async function () {
+    try {
+      $('btnVerify').disabled = true;
+      await S.verifyCode(gateEmail, $('code').value);
+      toConfirm();
+    } catch (e) { msg($('msg2'), e.message, 'error'); }
+    finally { $('btnVerify').disabled = false; }
+  });
+
+  $('btnBack').addEventListener('click', function () { show('stepLogin'); });
+
+  $('btnLogout').addEventListener('click', async function () {
+    await S.logout();
+    show('stepLogin');
+  });
+
+  $('btnConfirm').addEventListener('click', async function () {
+    try {
+      $('btnConfirm').disabled = true;
+      msg($('msg3'), 'Wird verknüpft …', 'info');
+      var sb = S.client();
+      var res = await sb.rpc('promnight_confirm_link', { p_token: req });
+      if (res.error) throw new Error(res.error.message);
+      try { localStorage.removeItem('pn_link_req'); } catch (_) {}
+      msg($('msg3'), 'Verknüpft. Du wirst weitergeleitet …', 'ok');
+      location.href = 'dashboard.html';
+    } catch (e) {
+      msg($('msg3'), e.message, 'error');
+      $('btnConfirm').disabled = false;
+    }
+  });
+
+  $('email').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('btnSend').click(); });
+  $('code').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('btnVerify').click(); });
+})();
+</script>
+</body>
+</html>
