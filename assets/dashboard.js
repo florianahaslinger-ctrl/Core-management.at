@@ -1,10 +1,10 @@
-/* CORE Management Ticketshop – Dashboard-Logik (dashboard.html)
+/* Birdie Tickets – Dashboard-Logik (dashboard.html)
    Backend: Supabase – Anmeldung per E-Mail-Verifizierung, Admin-Rechte über RLS. */
 (function () {
   'use strict';
   const S = window.CMStore;
   const $ = id => document.getElementById(id);
-  const GOLD = '#B08A28'; // validierte Diagrammfarbe auf dunklem Grund
+  const GOLD = '#7C3AED'; // validierte Diagrammfarbe auf dunklem Grund
 
   let orders = [];   // Cache aller Bestellungen
   let events = [];   // Cache aller Events (inkl. inaktive)
@@ -120,7 +120,7 @@
       const y = pad.t + ih - (t / maxV) * ih;
       svg += '<line x1="' + pad.l + '" y1="' + y + '" x2="' + (W - pad.r) + '" y2="' + y +
         '" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>' +
-        '<text x="' + (pad.l - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10" fill="#6f6f6f">' + t + '</text>';
+        '<text x="' + (pad.l - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10" fill="#8E8875">' + t + '</text>';
     });
     data.forEach((d, i) => {
       const h = (d.qty / maxV) * ih;
@@ -137,7 +137,7 @@
         '" fill="transparent"/></g>';
       if (i % 2 === 0) {
         svg += '<text x="' + (pad.l + i * step + step / 2) + '" y="' + (H - 8) +
-          '" text-anchor="middle" font-size="10" fill="#6f6f6f">' + d.label + '</text>';
+          '" text-anchor="middle" font-size="10" fill="#8E8875">' + d.label + '</text>';
       }
     });
     svg += '</svg><div class="chart-tip"></div>';
@@ -167,12 +167,12 @@
       const w = Math.max(3, (d.revenue / maxV) * iw);
       const by = y + 20;
       svg += '<g class="bar" data-i="' + i + '">' +
-        '<text x="' + pad.l + '" y="' + (y + 13) + '" font-size="11" fill="#F5F0EB">' + esc(d.label) +
-        ' <tspan fill="#6f6f6f">· ' + esc(d.event) + '</tspan></text>' +
+        '<text x="' + pad.l + '" y="' + (y + 13) + '" font-size="11" fill="#E8DCC4">' + esc(d.label) +
+        ' <tspan fill="#8E8875">· ' + esc(d.event) + '</tspan></text>' +
         '<path d="M' + pad.l + ' ' + by + ' H' + (pad.l + w - 4) + ' Q' + (pad.l + w) + ' ' + by + ' ' +
         (pad.l + w) + ' ' + (by + 4) + ' V' + (by + 8) + ' Q' + (pad.l + w) + ' ' + (by + 12) + ' ' +
         (pad.l + w - 4) + ' ' + (by + 12) + ' H' + pad.l + ' Z" fill="' + GOLD + '"/>' +
-        '<text x="' + (pad.l + w + 8) + '" y="' + (by + 10) + '" font-size="11" fill="#999">' +
+        '<text x="' + (pad.l + w + 8) + '" y="' + (by + 10) + '" font-size="11" fill="#B5AC97">' +
         S.fmtEUR.format(d.revenue) + '</text>' +
         '<rect x="0" y="' + y + '" width="' + W + '" height="' + rowH + '" fill="transparent"/></g>';
     });
@@ -203,7 +203,7 @@
     let rows = '<tr><th>Event</th><th>Kategorie</th><th>Preis</th><th>Verkauft</th><th>Kontingent</th><th>Auslastung</th></tr>';
     const bar = (pct) => '<td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;max-width:140px;height:6px;background:rgba(255,255,255,.08);border-radius:3px">' +
       '<div style="width:' + Math.min(100, pct) + '%;height:6px;background:' + GOLD + ';border-radius:3px"></div></div>' +
-      '<span style="color:#999;font-size:12px">' + pct + ' %</span></div></td>';
+      '<span style="color:#B5AC97;font-size:12px">' + pct + ' %</span></div></td>';
     fEvents().forEach(ev => {
       // Gesamtkontingent: eine Zeile je Event statt je Kategorie.
       if (ev.sharedQuota !== null && ev.sharedQuota !== undefined) {
@@ -236,7 +236,7 @@
         ? '<div class="hint" style="margin-top:8px">Gesamtkontingent: <strong>' + ev.sharedQuota + '</strong> Tickets · ' + ev.sharedSold + ' verkauft · ' + ev.sharedRemaining + ' frei</div>'
         : '') +
       '<div class="hint" style="margin-top:10px">Shop-Link: <a href="tickets.html?event=' + ev.id + '" target="_blank" rel="noopener">tickets.html?event=' + ev.id + '</a>' +
-        (mySuper ? ' · Veranstalter: ' + (ev.ownerEmail ? esc(ev.ownerEmail) : '— (CORE)') +
+        (mySuper ? ' · Veranstalter: ' + (ev.ownerEmail ? esc(ev.ownerEmail) : '— (Birdie Tickets)') +
           ((ev.coOwners && ev.coOwners.length) ? ' · +' + ev.coOwners.length + ' weitere' : '') : '') + '</div>' +
       '<div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">' +
       '<button class="btn btn-ghost btn-sm" data-edit="' + ev.id + '">Bearbeiten</button>' +
@@ -301,7 +301,7 @@
     if (mySuper) {
       S.getOrganizers().then(list => {
         const orgs = list.filter(a => a.role === 'organizer');
-        $('evOwner').innerHTML = '<option value="">— Head-Admin (CORE) —</option>' +
+        $('evOwner').innerHTML = '<option value="">— Head-Admin (Birdie Tickets) —</option>' +
           orgs.map(o => '<option value="' + esc(o.email) + '">' + esc(o.email) + '</option>').join('');
         $('evOwner').value = ev && ev.ownerEmail ? ev.ownerEmail : '';
       }).catch(() => {});
@@ -576,7 +576,7 @@
       o.tickets.some(t => t.code.toLowerCase().includes(q)));
 
     let rows = '<tr><th>Bestellung</th><th>Datum</th><th>E-Mail</th><th>Tickets</th><th>Summe</th><th>Status</th><th></th></tr>';
-    if (!list.length) rows += '<tr><td colspan="7" style="color:#6f6f6f">Keine Bestellungen gefunden.</td></tr>';
+    if (!list.length) rows += '<tr><td colspan="7" style="color:#8E8875">Keine Bestellungen gefunden.</td></tr>';
     list.forEach(o => {
       rows += '<tr><td><b>' + esc(o.id) + '</b></td><td>' + fmtDT(o.createdAt) + '</td>' +
         '<td>' + esc(o.email) + '</td>' +
@@ -607,7 +607,7 @@
     const all = orders.flatMap(o => o.tickets.filter(t => t.checkedIn).map(t => ({ t, email: o.email })))
       .sort((a, b) => new Date(b.t.checkedInAt) - new Date(a.t.checkedInAt)).slice(0, 20);
     let rows = '<tr><th>Zeit</th><th>Ticketcode</th><th>Kategorie</th><th>Event</th><th>E-Mail</th></tr>';
-    if (!all.length) rows += '<tr><td colspan="5" style="color:#6f6f6f">Noch keine Check-ins.</td></tr>';
+    if (!all.length) rows += '<tr><td colspan="5" style="color:#8E8875">Noch keine Check-ins.</td></tr>';
     all.forEach(({ t, email }) => {
       rows += '<tr><td>' + fmtDT(t.checkedInAt) + '</td><td><b>' + esc(t.code) + '</b></td><td>' +
         esc(t.categoryName) + '</td><td>' + esc(t.eventName) + '</td><td>' + esc(email) + '</td></tr>';
@@ -816,8 +816,8 @@
     const body = $('connectBody');
     if (!body) return;
     if (mySuper) {
-      body.innerHTML = '<p class="sub">Du bist Head-Admin. Zahlungen für CORE-eigene Bälle laufen direkt über das Plattform-Konto. ' +
-        'Zugewiesene Veranstalter verbinden ihr eigenes Auszahlungskonto hier selbst – ihre Einnahmen fließen direkt an sie, deine Gebühr (3,5 % + 0,25 €/Ticket) bleibt automatisch bei CORE.</p>';
+      body.innerHTML = '<p class="sub">Du bist Head-Admin. Zahlungen für eigene Bälle von Birdie Tickets laufen direkt über das Plattform-Konto. ' +
+        'Zugewiesene Veranstalter verbinden ihr eigenes Auszahlungskonto hier selbst – ihre Einnahmen fließen direkt an sie, deine Gebühr (3,5 % + 0,25 €/Ticket) bleibt automatisch bei Birdie Tickets.</p>';
       return;
     }
     body.innerHTML = '<p class="sub">Status wird geprüft …</p>';

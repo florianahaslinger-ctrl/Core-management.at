@@ -1,5 +1,5 @@
 /* =========================================================
-   CORE Management – Einlass-Scanner (einlass.js)
+   Birdie Tickets – Einlass-Scanner (einlass.js)
    Eigenständige, abgespeckte Seite: Login nur per Einlass-
    Passwort (pro Ball), danach ausschließlich QR-Check-in.
    Kein Zugriff auf Umsätze, Bestellungen oder Einstellungen.

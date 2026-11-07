@@ -1,4 +1,4 @@
-/* CORE Ticketshop – Weiße Version (shop/index.html)
+/* Birdie Tickets – Weiße Version (shop/index.html)
    Eigenständige Kopie der Shop-Logik, damit der klassische Shop
    (tickets.html + assets/shop.js) unverändert weiterläuft.
    Backend: Supabase + Stripe Checkout (echte Online-Zahlung). */

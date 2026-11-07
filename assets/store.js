@@ -1,5 +1,5 @@
 /* =========================================================
-   CORE Management Ticketshop – Datenschicht (store.js)
+   Birdie Tickets – Datenschicht (store.js)
    Backend: Supabase (zentrale Datenbank, E-Mail-Login mit
    Verifizierung) + Stripe Checkout mit Webhook-Bestätigung.
    Der geheime Stripe-Schlüssel liegt NUR in den Supabase-

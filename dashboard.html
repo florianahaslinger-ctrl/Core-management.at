@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard – CORE Management Ticketshop</title>
+<title>Dashboard – Birdie Tickets</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" href="favicon.png">
-<link rel="stylesheet" href="assets/shop.css">
+<link rel="stylesheet" href="assets/shop.css?v=20261107a">
 </head>
 <body>
 
 <nav class="shop-nav">
-  <a href="index.html" class="logo"><span>CORE</span> MANAGEMENT</a>
+  <a href="index.html" class="logo"><span>BIRDIE</span> TICKETS</a>
   <div class="links">
     <a href="tickets.html">Ticketshop</a>
     <a href="dashboard.html" class="active">Dashboard</a>
@@ -30,7 +30,7 @@
   <div class="card" style="max-width:460px">
     <div id="gateStep1">
       <label for="adminEmail">Admin-E-Mail</label>
-      <input type="email" id="adminEmail" placeholder="admin@core-management.at" autocomplete="email">
+      <input type="email" id="adminEmail" placeholder="name@beispiel.at" autocomplete="email">
       <div class="msg" id="gateMsg1"></div>
       <button class="btn btn-gold" id="btnGateSend" style="margin-top:16px">Anmelde-E-Mail senden</button>
     </div>
@@ -157,7 +157,7 @@
         </div>
       </div>
       <label for="issueNote">Nachricht an Empfänger:in (optional)</label>
-      <textarea id="issueNote" rows="2" placeholder="z. B. Viel Spaß beim Ball! – dein CORE-Team"></textarea>
+      <textarea id="issueNote" rows="2" placeholder="z. B. Viel Spaß beim Ball! – dein Birdie-Tickets-Team"></textarea>
       <div class="msg" id="issueMsg"></div>
       <button class="btn btn-gold" id="btnIssue" style="margin-top:16px">Tickets erstellen &amp; senden</button>
       <p class="hint" style="margin-top:12px">Die Empfänger:innen erhalten eine E-Mail mit Ticketcode und QR-Link. Sie können sich unter <b>tickets.html</b> mit ihrer E-Mail anmelden und die Tickets als PDF laden. Ausgestellte Tickets erscheinen unter „Bestellungen“ (Zahlart <i>gast</i> bzw. <i>bar</i>) und sind sofort einlassfähig.</p>
@@ -289,7 +289,7 @@
 
     <div class="super-only" style="margin-top:14px">
       <label>Haupt-Veranstalter (Besitzer &amp; Auszahlung)</label>
-      <select id="evOwner"><option value="">— Head-Admin (CORE) —</option></select>
+      <select id="evOwner"><option value="">— Head-Admin (Birdie Tickets) —</option></select>
       <p class="hint" style="margin-top:6px">Der Haupt-Veranstalter sieht und verwaltet diesen Ball – und nur auf sein Stripe-Konto läuft die Auszahlung.</p>
     </div>
 
@@ -352,7 +352,7 @@
       <label style="margin-top:0">Sitzplan (nur nötig, wenn es eine Sitzkarte gibt)</label>
       <p class="hint" id="seatPlanInfo" style="margin-bottom:10px"></p>
 
-      <div style="background:var(--dark2,#181818);border:1px solid var(--gold);border-radius:8px;padding:14px 16px;margin-bottom:16px">
+      <div style="background:var(--dark2,#2A4F3A);border:1px solid var(--gold);border-radius:8px;padding:14px 16px;margin-bottom:16px">
         <div style="font-weight:600;color:var(--gold-light);margin-bottom:4px">🎨 Grafischer Saalplan-Editor</div>
         <p class="hint" style="margin:0 0 10px">Tische frei platzieren &amp; verschieben, Form (rund/eckig) wählen, Bühne, Tanzfläche, Bar und Eingang setzen. Erzeugt die buchbaren Sitzplätze automatisch.</p>
         <a href="saalplan-editor.html" target="_blank" rel="noopener" class="btn btn-gold btn-sm" style="text-decoration:none;display:inline-block">Saalplan-Editor öffnen →</a>
@@ -381,15 +381,15 @@
 </div>
 
 <footer class="shop-footer">
-  <div>© CORE Management · Ticketshop-Dashboard</div>
+  <div>© Birdie Tickets · Dashboard</div>
   <div><a href="tickets.html">Zum Shop</a> · <a href="index.html">Hauptseite</a></div>
 </footer>
 
-<script src="assets/supabase.js"></script>
-<script src="assets/jsqr.js"></script>
-<script src="assets/qrcode.js"></script>
-<script src="assets/ticket-pdf.js"></script>
-<script src="assets/store.js"></script>
-<script src="assets/dashboard.js"></script>
+<script src="assets/supabase.js?v=20261107a"></script>
+<script src="assets/jsqr.js?v=20261107a"></script>
+<script src="assets/qrcode.js?v=20261107a"></script>
+<script src="assets/ticket-pdf.js?v=20261107a"></script>
+<script src="assets/store.js?v=20261107a"></script>
+<script src="assets/dashboard.js?v=20261107a"></script>
 </body>
 </html>

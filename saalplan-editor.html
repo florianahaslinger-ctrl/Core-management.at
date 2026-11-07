@@ -3,33 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Saalplan-Editor – CORE Management</title>
+<title>Saalplan-Editor – Birdie Tickets</title>
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@0,300;0,400;0,500;0,600&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" href="favicon.png">
-<script src="assets/supabase.js"></script>
-<script src="assets/store.js"></script>
+<script src="assets/supabase.js?v=20261107a"></script>
+<script src="assets/store.js?v=20261107a"></script>
 <style>
   :root{
-    --black:#080808;--dark:#101010;--panel:#161616;--line:rgba(201,168,76,.18);
-    --gold:#C9A84C;--gold-light:#E8C97A;--white:#F5F0EB;--gray:#999;--muted:#6f6f6f;
-    --gold-grad:linear-gradient(135deg,#E8C97A 0%,#C9A84C 55%,#b0913a 100%);
+    --black:#1F3D2B;--dark:#21422F;--panel:#264A35;--line:rgba(139,92,246,.18);
+    --gold:#8B5CF6;--gold-light:#A78BFA;--white:#E8DCC4;--gray:#B5AC97;--muted:#8E8875;
+    --gold-grad:linear-gradient(135deg,#A78BFA 0%,#8B5CF6 55%,#7C3AED 100%);
     --blue:#5B8FD9;--green:#4F9E5A;--warn:#C77E2E;
   }
   *{margin:0;padding:0;box-sizing:border-box}
   body{background:var(--black);color:var(--white);font-family:'DM Sans',sans-serif;font-weight:300;min-height:100vh}
-  .top{display:flex;justify-content:space-between;align-items:center;padding:16px 26px;border-bottom:1px solid var(--line);background:rgba(8,8,8,.9)}
+  .top{display:flex;justify-content:space-between;align-items:center;padding:16px 26px;border-bottom:1px solid var(--line);background:rgba(31,61,43,.9)}
   .top .logo{font-family:'Bebas Neue';font-size:1.4rem;letter-spacing:.1em}
   .top .logo span{color:var(--gold)}
   .top .hint{font-size:.72rem;color:var(--muted);letter-spacing:.05em}
 
   .subbar{display:flex;align-items:center;gap:10px;padding:11px 26px;border-bottom:1px solid var(--line);background:var(--dark);flex-wrap:wrap}
   .sb-label{font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gray)}
-  #evSel{background:#0e0e0d;border:1px solid var(--line);color:var(--white);padding:8px 11px;border-radius:6px;font-family:inherit;font-size:.85rem;min-width:220px}
+  #evSel{background:#1B3727;border:1px solid var(--line);color:var(--white);padding:8px 11px;border-radius:6px;font-family:inherit;font-size:.85rem;min-width:220px}
   .sb-btn{background:var(--panel);border:1px solid var(--line);color:var(--white);padding:8px 14px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;transition:.15s}
   .sb-btn:hover{border-color:var(--gold);color:var(--gold-light)}
-  .sb-btn.gold{background:var(--gold-grad);color:#181206;border-color:var(--gold);font-weight:600}
+  .sb-btn.gold{background:var(--gold-grad);color:#FFFFFF;border-color:var(--gold);font-weight:600}
   .sb-btn.ghost{background:transparent}
   .sb-status{font-size:.8rem;color:var(--gold-light)}
 
@@ -37,7 +37,7 @@
   .login-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:30px 28px;width:340px;max-width:92vw}
   .login-card h3{font-family:'Bebas Neue';font-size:1.3rem;letter-spacing:.05em;color:var(--white)}
   .login-card .lo-sub{font-size:.82rem;color:var(--muted);margin:4px 0 18px}
-  .login-card input{width:100%;background:#0e0e0d;border:1px solid var(--line);color:var(--white);padding:11px 12px;border-radius:7px;font-family:inherit;font-size:.95rem;margin-bottom:10px}
+  .login-card input{width:100%;background:#1B3727;border:1px solid var(--line);color:var(--white);padding:11px 12px;border-radius:7px;font-family:inherit;font-size:.95rem;margin-bottom:10px}
   .lo-msg{font-size:.82rem;margin-top:10px;min-height:18px}
   .lo-msg.err{color:#e58b88}.lo-msg.ok{color:var(--gold-light)}
 
@@ -53,19 +53,19 @@
   .tool .ic.round{border-radius:50%}
   .tool .ic.bar{border-radius:2px}
 
-  .canvas-wrap{flex:1;overflow:auto;border:1px solid var(--line);border-radius:10px;background:#0b0b0a;position:relative}
+  .canvas-wrap{flex:1;overflow:auto;border:1px solid var(--line);border-radius:10px;background:#1A3425;position:relative}
   #canvas{position:relative;width:1600px;height:1040px;margin:0 auto;
-    background-image:radial-gradient(rgba(201,168,76,.08) 1px,transparent 1px);background-size:26px 26px;background-position:13px 13px}
+    background-image:radial-gradient(rgba(139,92,246,.08) 1px,transparent 1px);background-size:26px 26px;background-position:13px 13px}
 
   /* Objekte (Bühne, Tanzfläche, Bar, Eingang) */
   .obj{position:absolute;border-radius:8px;cursor:grab;user-select:none;display:flex;align-items:center;justify-content:center;
     text-align:center;font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;font-weight:500;touch-action:none}
   .obj.selected{outline:2px solid var(--gold-light);outline-offset:3px}
   .obj.dragging{cursor:grabbing;z-index:50;opacity:.94}
-  .obj.stage{color:var(--gold-light);background:linear-gradient(180deg,rgba(201,168,76,.28),rgba(201,168,76,.06));
-    border:1px solid var(--gold);box-shadow:inset 0 -18px 34px -18px rgba(201,168,76,.7)}
-  .obj.dancefloor{color:rgba(245,240,235,.55);background:
-    repeating-linear-gradient(45deg,rgba(255,255,255,.04) 0 12px,transparent 12px 24px);border:1px dashed rgba(245,240,235,.25)}
+  .obj.stage{color:var(--gold-light);background:linear-gradient(180deg,rgba(139,92,246,.28),rgba(139,92,246,.06));
+    border:1px solid var(--gold);box-shadow:inset 0 -18px 34px -18px rgba(139,92,246,.7)}
+  .obj.dancefloor{color:rgba(232,220,196,.55);background:
+    repeating-linear-gradient(45deg,rgba(255,255,255,.04) 0 12px,transparent 12px 24px);border:1px dashed rgba(232,220,196,.25)}
   .obj.bar{color:#cdbd97;background:linear-gradient(180deg,rgba(91,143,217,.12),rgba(91,143,217,.03));border:1px solid rgba(91,143,217,.45)}
   .obj.entrance{color:#a9d4b0;background:linear-gradient(180deg,rgba(79,158,90,.14),rgba(79,158,90,.03));border:1px solid rgba(79,158,90,.5)}
 
@@ -73,15 +73,15 @@
   .table-obj{position:absolute;cursor:grab;user-select:none;touch-action:none}
   .table-obj.dragging{cursor:grabbing;z-index:50}
   .table-surface{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-    background:radial-gradient(circle at 50% 32%,#221e15,#0e0d0b);border:1px solid var(--line);
+    background:radial-gradient(circle at 50% 32%,#2C5540,#1B3727);border:1px solid var(--line);
     display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);
     font-size:10px;letter-spacing:.05em;text-transform:uppercase;line-height:1.2;
-    box-shadow:0 12px 28px -14px rgba(0,0,0,.95),inset 0 1px 0 rgba(201,168,76,.14)}
+    box-shadow:0 12px 28px -14px rgba(0,0,0,.95),inset 0 1px 0 rgba(139,92,246,.14)}
   .table-obj.round .table-surface{border-radius:50%}
   .table-obj.rect .table-surface{border-radius:8px}
   .table-obj.selected .table-surface{border-color:var(--gold-light);box-shadow:0 0 0 2px rgba(232,201,122,.5),0 12px 28px -14px rgba(0,0,0,.95)}
-  .pseat{position:absolute;width:26px;height:26px;border-radius:50%;border:1px solid rgba(201,168,76,.4);
-    background:#1b1914;color:var(--gold-light);font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:500}
+  .pseat{position:absolute;width:26px;height:26px;border-radius:50%;border:1px solid rgba(139,92,246,.4);
+    background:#2A4F3A;color:var(--gold-light);font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:500}
 
   /* Eigenschaften-Panel */
   .panel{background:var(--panel);border-left:1px solid var(--line);padding:22px 20px;overflow-y:auto}
@@ -89,17 +89,17 @@
   .panel .psub{font-size:.78rem;color:var(--muted);margin-bottom:20px}
   .field{margin-bottom:16px}
   .field label{display:block;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);margin-bottom:7px}
-  .field input[type=text],.field input[type=number]{width:100%;background:#0e0e0d;border:1px solid var(--line);color:var(--white);
+  .field input[type=text],.field input[type=number]{width:100%;background:#1B3727;border:1px solid var(--line);color:var(--white);
     padding:9px 11px;border-radius:6px;font-family:inherit;font-size:.9rem}
   .seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
-  .seg button{flex:1;background:#0e0e0d;border:none;color:var(--gray);padding:9px;font-family:inherit;font-size:.8rem;cursor:pointer;transition:.15s}
-  .seg button.on{background:var(--gold-grad);color:#181206;font-weight:600}
+  .seg button{flex:1;background:#1B3727;border:none;color:var(--gray);padding:9px;font-family:inherit;font-size:.8rem;cursor:pointer;transition:.15s}
+  .seg button.on{background:var(--gold-grad);color:#FFFFFF;font-weight:600}
   .stepper{display:flex;align-items:center;gap:10px}
-  .stepper button{width:34px;height:34px;border:1px solid var(--line);background:#0e0e0d;color:var(--gold-light);border-radius:6px;font-size:1.1rem;cursor:pointer}
+  .stepper button{width:34px;height:34px;border:1px solid var(--line);background:#1B3727;color:var(--gold-light);border-radius:6px;font-size:1.1rem;cursor:pointer}
   .stepper button:hover{border-color:var(--gold)}
   .stepper .val{flex:1;text-align:center;font-size:1.1rem;color:var(--white)}
   .btn{width:100%;padding:11px;border-radius:7px;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--white);font-family:inherit;transition:.15s;margin-top:6px}
-  .btn.gold{background:var(--gold-grad);color:#181206;border-color:var(--gold);font-weight:600}
+  .btn.gold{background:var(--gold-grad);color:#FFFFFF;border-color:var(--gold);font-weight:600}
   .btn.danger{color:#e58b88;border-color:rgba(192,80,79,.5)}
   .btn.danger:hover{background:rgba(192,80,79,.15)}
   .btn:hover{border-color:var(--gold)}
@@ -107,13 +107,13 @@
   .bar-actions{margin-top:26px;padding-top:18px;border-top:1px solid var(--line)}
   .count-note{font-size:.78rem;color:var(--gray);margin-top:14px;line-height:1.6}
   .count-note b{color:var(--gold-light)}
-  pre#out{display:none;margin-top:14px;background:#0e0e0d;border:1px solid var(--line);border-radius:6px;padding:12px;font-size:.72rem;color:var(--gray);max-height:180px;overflow:auto;white-space:pre-wrap;word-break:break-all}
+  pre#out{display:none;margin-top:14px;background:#1B3727;border:1px solid var(--line);border-radius:6px;padding:12px;font-size:.72rem;color:var(--gray);max-height:180px;overflow:auto;white-space:pre-wrap;word-break:break-all}
 </style>
 </head>
 <body>
 
 <div class="top">
-  <div class="logo">CORE <span>MANAGEMENT</span> · Saalplan-Editor</div>
+  <div class="logo"><span>BIRDIE</span> TICKETS · Saalplan-Editor</div>
   <div class="hint">Objekt anklicken zum Bearbeiten · ziehen zum Verschieben</div>
 </div>
 
@@ -130,11 +130,11 @@
 <!-- Login-Overlay -->
 <div id="loginOverlay" class="overlay" style="display:none">
   <div class="login-card">
-    <div class="logo" style="font-family:'Bebas Neue';font-size:1.4rem;margin-bottom:6px">CORE <span style="color:var(--gold)">MANAGEMENT</span></div>
+    <div class="logo" style="font-family:'Bebas Neue';font-size:1.4rem;margin-bottom:6px"><span style="color:var(--gold)">BIRDIE</span> TICKETS</div>
     <h3>Admin-Anmeldung</h3>
     <p class="lo-sub">Nur Veranstalter:innen. Wir senden dir einen Code per E-Mail.</p>
     <div id="loStep1">
-      <input type="email" id="loEmail" placeholder="office@core-management.at" autocomplete="email">
+      <input type="email" id="loEmail" placeholder="name@beispiel.at" autocomplete="email">
       <button class="sb-btn gold" id="loSend" style="width:100%">Code anfordern</button>
     </div>
     <div id="loStep2" style="display:none">

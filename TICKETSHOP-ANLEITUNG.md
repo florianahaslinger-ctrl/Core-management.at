@@ -1,4 +1,4 @@
-# CORE Management – Ticketshop-Anleitung
+# Birdie Tickets – Ticketshop-Anleitung
 
 ## Überblick
 

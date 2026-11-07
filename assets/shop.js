@@ -1,4 +1,4 @@
-/* CORE Management Ticketshop – Shop-Logik (tickets.html)
+/* Birdie Tickets – Shop-Logik (tickets.html)
    Backend: Supabase + Stripe Checkout (echte Online-Zahlung). */
 (function () {
   'use strict';

@@ -1,5 +1,5 @@
 /* =========================================================
-   CORE Management Ticketshop – PDF-Tickets (ticket-pdf.js)
+   Birdie Tickets – PDF-Tickets (ticket-pdf.js)
    Erzeugt ohne externe Bibliotheken ein PDF (eine Seite pro
    Ticket) mit QR-Code und klassischem Ticketcode.
    Benötigt assets/qrcode.js (globale Funktion `qrcode`).
@@ -105,8 +105,10 @@
 
   /* --- Layout einer Ticketseite (A4: 595 x 842 pt) --- */
 
-  const GOLD = '0.788 0.659 0.298'; // #C9A84C
-  const DARK = '0.045 0.045 0.045';
+  // Birdie Tickets: Violett (Akzent), Dunkelgrün (Kopfleiste), Beige (Schrift auf Grün)
+  const GOLD = '0.545 0.361 0.965'; // #8B5CF6
+  const DARK = '0.122 0.239 0.169'; // #1F3D2B
+  const BEIGE = '0.910 0.863 0.769'; // #E8DCC4
   const GRAY = '0.45 0.45 0.45';
 
   function fmtDate(iso) {
@@ -124,9 +126,9 @@
     let s = '';
     // Kopfleiste
     s += DARK + ' rg\n0 762 595 80 re f\n';
-    s += line(60, 800, 'F1', 22, GOLD, 'CORE MANAGEMENT');
-    s += line(60, 778, 'F2', 10, '0.7 0.7 0.7', 'Events & Entertainment Austria');
-    s += line(455, 792, 'F1', 20, GOLD, 'TICKET');
+    s += line(60, 800, 'F1', 22, BEIGE, 'BIRDIE TICKETS');
+    s += line(60, 778, 'F2', 10, BEIGE, 'Tickets für Bälle & Events');
+    s += line(455, 792, 'F1', 20, '0.655 0.545 0.98', 'TICKET');
 
     // Eventblock
     s += line(60, 700, 'F1', 21, '0 0 0', t.eventName);
@@ -134,7 +136,7 @@
 
     // Kategorie & Preis
     s += GOLD + ' rg\n60 640 200 26 re f\n';
-    s += line(70, 648, 'F1', 13, '0.08 0.06 0.02', t.categoryName);
+    s += line(70, 648, 'F1', 13, '1 1 1', t.categoryName);
     s += line(280, 648, 'F1', 13, '0 0 0', eur.format(t.price));
 
     // Sitzplatz (falls vorhanden)
@@ -166,7 +168,7 @@
       'Dieses Ticket ist nur einmal gültig und wird beim Einlass entwertet.',
       'Der Zutritt ist nur mit gültigem Ticket (QR-Code oder Ticketcode) möglich.',
       'Weitergabe nur inklusive dieses Dokuments; Kopien werden beim Einlass ungültig.',
-      'Veranstalter: CORE Management · core-management.at'
+      'Ticketsystem: Birdie Tickets · core-management.at'
     ];
     hints.forEach((h, i) => { s += line(60, 260 - i * 15, 'F2', 9, GRAY, '·  ' + h); });
 

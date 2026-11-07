@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CORE Management – Ticketsystem für Bälle</title>
-<meta name="description" content="CORE Management ist das Ticketsystem für Bälle: eigener Online-Ticketshop, interaktiver Sitzplan, QR-Einlass, sichere Bezahlung und direkte Auszahlung per Stripe. Plus Buchungssystem für Tennisclubs. Jetzt Demo anfragen.">
-<meta property="og:title" content="CORE Management – Ticketsystem für Bälle">
+<title>Birdie Tickets – Ticketsystem für Bälle</title>
+<meta name="description" content="Birdie Tickets ist das Ticketsystem für Bälle: eigener Online-Ticketshop, interaktiver Sitzplan, QR-Einlass, sichere Bezahlung und direkte Auszahlung per Stripe. Plus Buchungssystem für Tennisclubs. Jetzt Demo anfragen.">
+<meta property="og:title" content="Birdie Tickets – Ticketsystem für Bälle">
 <meta property="og:description" content="Verkauft eure Balltickets komplett online: Shop, Sitzplan, QR-Einlass, Auszahlung per Stripe. Auch als Buchungssystem für Tennisclubs.">
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,18 +17,18 @@
 </script>
 <style>
   :root {
-    --gold: #C9A84C;
-    --gold-light: #E8C97A;
-    --gold-dim: rgba(201,168,76,0.14);
-    --black: #080808;
-    --dark: #0e0e0e;
-    --dark2: #151515;
-    --panel: #121212;
-    --line: rgba(201,168,76,0.18);
-    --line-soft: rgba(245,240,235,0.08);
-    --white: #F5F0EB;
-    --gray: #9a968f;
-    --gray-dim: #6f6c66;
+    --gold: #8B5CF6;
+    --gold-light: #A78BFA;
+    --gold-dim: rgba(139,92,246,0.14);
+    --black: #1F3D2B;
+    --dark: #1B3727;
+    --dark2: #264A35;
+    --panel: #22442F;
+    --line: rgba(139,92,246,0.18);
+    --line-soft: rgba(232,220,196,0.08);
+    --white: #E8DCC4;
+    --gray: #B5AC97;
+    --gray-dim: #8E8875;
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
@@ -46,8 +46,8 @@
   /* --- Shared type --- */
   .label { display: inline-flex; align-items: center; gap: 12px; font-family: 'DM Sans'; font-size: 0.66rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--gold); font-weight: 500; }
   .label::before { content: ''; width: 28px; height: 1px; background: var(--gold); opacity: 0.7; }
-  .chip { display: inline-flex; align-items: center; gap: 9px; font-size: 0.62rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--black); background: var(--gold); padding: 8px 16px; font-weight: 600; box-shadow: 0 8px 26px rgba(201,168,76,0.28); }
-  .chip::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--black); }
+  .chip { display: inline-flex; align-items: center; gap: 9px; font-size: 0.62rem; letter-spacing: 0.24em; text-transform: uppercase; color: #fff; background: var(--gold); padding: 8px 16px; font-weight: 600; box-shadow: 0 8px 26px rgba(139,92,246,0.28); }
+  .chip::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #fff; }
   h1, h2, h3 { font-family: 'Cormorant Garamond', serif; font-weight: 500; line-height: 1.06; letter-spacing: -0.01em; }
   h2.head { font-size: clamp(2.3rem, 5vw, 3.5rem); margin: 22px 0 0; }
   h2.head em, h1 em { font-style: italic; color: var(--gold); }
@@ -55,9 +55,9 @@
 
   /* --- Buttons --- */
   .btn { display: inline-flex; align-items: center; gap: 10px; font-family: 'DM Sans'; font-size: 0.74rem; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 500; padding: 17px 34px; border: 1px solid transparent; cursor: pointer; transition: all 0.25s ease; }
-  .btn-gold { background: var(--gold); color: var(--black); box-shadow: 0 10px 34px rgba(201,168,76,0.32); }
-  .btn-gold:hover { background: var(--gold-light); transform: translateY(-2px); box-shadow: 0 16px 44px rgba(201,168,76,0.45); }
-  .btn-ghost { background: transparent; color: var(--white); border-color: rgba(245,240,235,0.25); }
+  .btn-gold { background: var(--gold); color: #fff; box-shadow: 0 10px 34px rgba(139,92,246,0.32); }
+  .btn-gold:hover { background: var(--gold-light); transform: translateY(-2px); box-shadow: 0 16px 44px rgba(139,92,246,0.45); }
+  .btn-ghost { background: transparent; color: var(--white); border-color: rgba(232,220,196,0.25); }
   .btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
 
   /* --- Reveal --- */
@@ -67,13 +67,13 @@
 
   /* --- NAV --- */
   nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 22px clamp(20px,5vw,50px); display: flex; align-items: center; justify-content: space-between; transition: background 0.3s, padding 0.3s, border-color 0.3s; border-bottom: 1px solid transparent; }
-  nav.scrolled { background: rgba(8,8,8,0.9); backdrop-filter: blur(14px); padding-top: 15px; padding-bottom: 15px; border-color: var(--line-soft); }
+  nav.scrolled { background: rgba(31,61,43,0.9); backdrop-filter: blur(14px); padding-top: 15px; padding-bottom: 15px; border-color: var(--line-soft); }
   .logo { font-family: 'Bebas Neue'; font-size: 1.5rem; letter-spacing: 0.14em; }
   .logo span { color: var(--gold); }
   nav ul { list-style: none; display: flex; gap: 34px; }
   nav ul a { font-size: 0.82rem; letter-spacing: 0.04em; color: var(--gray); transition: color 0.2s; }
   nav ul a:hover { color: var(--white); }
-  .nav-cta { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; color: var(--black); background: var(--gold); padding: 12px 22px; transition: all 0.2s; }
+  .nav-cta { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; color: #fff; background: var(--gold); padding: 12px 22px; transition: all 0.2s; }
   .nav-cta:hover { background: var(--gold-light); }
   .nav-toggle { display: none; background: none; border: 0; color: var(--white); font-size: 1.6rem; cursor: pointer; }
   @media (max-width: 860px) {
@@ -87,12 +87,12 @@
   /* --- HERO --- */
   .hero { min-height: 100vh; display: flex; align-items: center; padding: 120px 0 90px; overflow: hidden; }
   .hero-bg { position: absolute; inset: 0; background-size: cover; background-position: center; filter: grayscale(0.3) brightness(0.5); transform: scale(1.05); }
-  .hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(105deg, rgba(8,8,8,0.94) 0%, rgba(8,8,8,0.82) 42%, rgba(8,8,8,0.55) 100%); }
-  .hero-glow { position: absolute; top: -20%; right: -10%; width: 60%; height: 90%; background: radial-gradient(closest-side, rgba(201,168,76,0.16), transparent 72%); pointer-events: none; z-index: 1; }
+  .hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(105deg, rgba(31,61,43,0.94) 0%, rgba(31,61,43,0.82) 42%, rgba(31,61,43,0.55) 100%); }
+  .hero-glow { position: absolute; top: -20%; right: -10%; width: 60%; height: 90%; background: radial-gradient(closest-side, rgba(139,92,246,0.16), transparent 72%); pointer-events: none; z-index: 1; }
   .hero .wrap { position: relative; z-index: 2; width: 100%; }
   .hero-content { max-width: 720px; }
   .hero h1 { font-size: clamp(3rem, 8vw, 6rem); margin: 26px 0 0; }
-  .hero-desc { color: rgba(245,240,235,0.82); font-size: clamp(1.02rem, 1.6vw, 1.2rem); line-height: 1.7; max-width: 540px; margin: 26px 0 0; }
+  .hero-desc { color: rgba(232,220,196,0.82); font-size: clamp(1.02rem, 1.6vw, 1.2rem); line-height: 1.7; max-width: 540px; margin: 26px 0 0; }
   .hero-actions { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 40px; }
   .hero-tags { display: flex; gap: 10px 26px; flex-wrap: wrap; margin-top: 44px; padding-top: 26px; border-top: 1px solid var(--line-soft); }
   .hero-tag { display: flex; align-items: center; gap: 9px; font-size: 0.8rem; color: var(--gray); }
@@ -136,31 +136,31 @@
   /* Ticket mock */
   .mock { position: relative; }
   .ticket { background: linear-gradient(140deg, #17130c, #221a0e); border: 1px solid var(--line); border-radius: 14px; padding: 26px; box-shadow: 0 30px 70px rgba(0,0,0,0.6); max-width: 400px; margin: 0 auto; }
-  .ticket-top { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 18px; border-bottom: 1px dashed rgba(201,168,76,0.4); }
+  .ticket-top { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 18px; border-bottom: 1px dashed rgba(139,92,246,0.4); }
   .ticket-top .t-ev { font-family: 'Cormorant Garamond'; font-size: 1.5rem; color: var(--white); }
-  .ticket-top .t-cat { display: inline-block; margin-top: 8px; font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--black); background: var(--gold); padding: 4px 10px; }
+  .ticket-top .t-cat { display: inline-block; margin-top: 8px; font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: #fff; background: var(--gold); padding: 4px 10px; }
   .t-logo { font-family: 'Bebas Neue'; font-size: 1.1rem; letter-spacing: 0.1em; color: var(--gold); }
   .ticket-body { display: flex; gap: 20px; align-items: center; padding-top: 20px; }
   .qr { width: 92px; height: 92px; flex: 0 0 92px; background:
       conic-gradient(from 0deg, #0000 0 25%, #000 0 50%, #0000 0 75%, #000 0) 0 0/16px 16px,
       #fff; padding: 8px; border-radius: 6px; }
   .qr i { display: block; width: 100%; height: 100%; background:
-      linear-gradient(#111 0 0) 0 0/100% 12px no-repeat,
-      linear-gradient(#111 0 0) 0 100%/100% 12px no-repeat,
-      linear-gradient(#111 0 0) 0 0/12px 100% no-repeat,
-      linear-gradient(#111 0 0) 100% 0/12px 100% no-repeat,
-      repeating-linear-gradient(90deg, #111 0 6px, #fff 6px 12px) center/60% 60% no-repeat; }
+      linear-gradient(#21422F 0 0) 0 0/100% 12px no-repeat,
+      linear-gradient(#21422F 0 0) 0 100%/100% 12px no-repeat,
+      linear-gradient(#21422F 0 0) 0 0/12px 100% no-repeat,
+      linear-gradient(#21422F 0 0) 100% 0/12px 100% no-repeat,
+      repeating-linear-gradient(90deg, #21422F 0 6px, #fff 6px 12px) center/60% 60% no-repeat; }
   .ticket-info .t-lbl { font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gray-dim); }
   .ticket-info .t-code { font-family: 'Bebas Neue'; font-size: 1.5rem; letter-spacing: 0.08em; color: var(--white); margin: 2px 0 12px; }
   .ticket-info .t-seat { font-size: 0.86rem; color: var(--gold-light); }
 
   /* Seat mock */
-  .seatgrid { background: linear-gradient(160deg, #101010, #171310); border: 1px solid var(--line); border-radius: 14px; padding: 28px; box-shadow: 0 30px 70px rgba(0,0,0,0.6); max-width: 420px; margin: 0 auto; }
+  .seatgrid { background: linear-gradient(160deg, #21422F, #171310); border: 1px solid var(--line); border-radius: 14px; padding: 28px; box-shadow: 0 30px 70px rgba(0,0,0,0.6); max-width: 420px; margin: 0 auto; }
   .stage { text-align: center; font-size: 0.6rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--gray-dim); border: 1px solid var(--line-soft); padding: 7px; margin-bottom: 20px; }
   .seats { display: grid; grid-template-columns: repeat(10, 1fr); gap: 7px; }
-  .seats i { aspect-ratio: 1; border-radius: 3px; background: rgba(245,240,235,0.1); }
-  .seats i.sold { background: rgba(201,168,76,0.25); }
-  .seats i.sel { background: var(--gold); box-shadow: 0 0 12px rgba(201,168,76,0.7); }
+  .seats i { aspect-ratio: 1; border-radius: 3px; background: rgba(232,220,196,0.1); }
+  .seats i.sold { background: rgba(139,92,246,0.25); }
+  .seats i.sel { background: var(--gold); box-shadow: 0 0 12px rgba(139,92,246,0.7); }
   .seat-legend { display: flex; gap: 18px; justify-content: center; margin-top: 20px; font-size: 0.72rem; color: var(--gray); }
   .seat-legend span { display: flex; align-items: center; gap: 7px; }
   .seat-legend b { width: 11px; height: 11px; border-radius: 2px; display: inline-block; }
@@ -171,11 +171,19 @@
   .step-num { font-family: 'Bebas Neue'; font-size: 3.4rem; color: var(--gold); line-height: 1; opacity: 0.85; }
   .step h3 { font-family: 'DM Sans'; font-weight: 500; font-size: 1.2rem; margin: 14px 0 10px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
   .step p { color: var(--gray); font-size: 0.94rem; line-height: 1.65; }
+
+  /* Birdie Tickets: helle Beige-Flächen (30 % der Farbaufteilung) mit grüner Schrift */
+  .stats, .steps-sec { background: var(--white); color: var(--black); border-color: rgba(31,61,43,0.12); }
+  .stat { border-right-color: rgba(31,61,43,0.14); }
+  .stat-label, .steps-sec .step p { color: #4A5E4F; }
+  .steps-sec h2.head { color: var(--black); }
+  .steps-sec .step h3 { color: var(--black); border-top-color: rgba(31,61,43,0.18); }
+  @media (max-width: 720px) { .stat { border-bottom-color: rgba(31,61,43,0.14); } }
   @media (max-width: 760px) { .steps { grid-template-columns: 1fr; } }
 
   /* --- TENNIS --- */
   .tennis { overflow: hidden; background: radial-gradient(120% 130% at 85% 0%, #12200f 0%, #0d160b 45%, var(--black) 100%); border-top: 2px solid var(--gold); border-bottom: 2px solid var(--gold); }
-  .tennis::before { content: ''; position: absolute; top: -30%; left: -10%; width: 55%; height: 120%; background: radial-gradient(closest-side, rgba(201,168,76,0.14), transparent 70%); pointer-events: none; }
+  .tennis::before { content: ''; position: absolute; top: -30%; left: -10%; width: 55%; height: 120%; background: radial-gradient(closest-side, rgba(139,92,246,0.14), transparent 70%); pointer-events: none; }
   .tennis .wrap { position: relative; z-index: 1; text-align: center; }
   .tennis .inner { max-width: 780px; margin: 0 auto; }
   .tennis h2 { font-size: clamp(2.3rem, 5.4vw, 3.5rem); margin: 24px 0 0; }
@@ -226,7 +234,7 @@
 <body>
 
 <nav id="nav">
-  <a href="#" class="logo"><span>CORE</span> MANAGEMENT</a>
+  <a href="#" class="logo"><span>BIRDIE</span> TICKETS</a>
   <ul>
     <li><a href="#funktionen">Funktionen</a></li>
     <li><a href="#ablauf">So funktioniert's</a></li>
@@ -246,7 +254,7 @@
     <div class="hero-content">
       <span class="chip reveal">Ticketsystem für Bälle · Austria</span>
       <h1 class="reveal d1">Verkauft eure Balltickets<br><em>komplett online.</em></h1>
-      <p class="hero-desc reveal d2">CORE Management ist das Ticketsystem für Bälle – eigener Online-Shop, interaktiver Sitzplan, sichere Bezahlung und QR-Einlass. Ihr verkauft rund um die Uhr, das Geld fließt direkt an euch.</p>
+      <p class="hero-desc reveal d2">Birdie Tickets ist das Ticketsystem für Bälle – eigener Online-Shop, interaktiver Sitzplan, sichere Bezahlung und QR-Einlass. Ihr verkauft rund um die Uhr, das Geld fließt direkt an euch.</p>
       <div class="hero-actions reveal d3">
         <a href="#demo" class="btn btn-gold">Demo anfragen</a>
         <a href="tickets.html" class="btn btn-ghost">Ticketshop ansehen</a>
@@ -283,7 +291,7 @@
       <div class="feat reveal">
         <div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4Z"/><path d="M13 6v12" stroke-dasharray="2 2"/></svg></div>
         <h3>Online-Ticketshop</h3>
-        <p>Euer eigener Shop, erreichbar über einen einfachen Link. Im gold-schwarzen CORE-Design, rund um die Uhr geöffnet.</p>
+        <p>Euer eigener Shop, erreichbar über einen einfachen Link. Im grün-violetten Birdie-Design, rund um die Uhr geöffnet.</p>
       </div>
       <div class="feat reveal d1">
         <div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><path d="M14 14h2v2m4-2v6m-6 0h6"/></svg></div>
@@ -333,7 +341,7 @@
           <div class="ticket">
             <div class="ticket-top">
               <div><div class="t-ev">BRG Ball 2027</div><span class="t-cat">Stehplatz</span></div>
-              <div class="t-logo">CORE</div>
+              <div class="t-logo">BIRDIE</div>
             </div>
             <div class="ticket-body">
               <div class="qr"><i></i></div>
@@ -363,8 +371,8 @@
             <div class="stage">Bühne</div>
             <div class="seats" id="seatDemo"></div>
             <div class="seat-legend">
-              <span><b style="background:rgba(245,240,235,0.1)"></b>frei</span>
-              <span><b style="background:rgba(201,168,76,0.25)"></b>verkauft</span>
+              <span><b style="background:rgba(232,220,196,0.1)"></b>frei</span>
+              <span><b style="background:rgba(139,92,246,0.25)"></b>verkauft</span>
               <span><b style="background:var(--gold)"></b>Auswahl</span>
             </div>
           </div>
@@ -465,7 +473,7 @@
   <div class="wrap">
     <div class="footer-top">
       <div>
-        <a href="#top" class="footer-logo"><span>CORE</span> MANAGEMENT</a>
+        <a href="#top" class="footer-logo"><span>BIRDIE</span> TICKETS</a>
         <div class="footer-tagline">Ticketsystem für Bälle · Buchungssystem für Tennisclubs.</div>
       </div>
       <div class="footer-links">
@@ -478,7 +486,7 @@
       </div>
     </div>
     <div class="footer-bottom">
-      <p>© 2026 CORE Management Austria. Alle Rechte vorbehalten.</p>
+      <p>© 2026 Birdie Tickets. Alle Rechte vorbehalten.</p>
       <div class="socials"><a href="https://www.instagram.com/core_mgt/" target="_blank" rel="noopener">IG</a></div>
     </div>
   </div>
