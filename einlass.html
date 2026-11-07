@@ -43,6 +43,15 @@
     <div class="eyebrow" id="ciScanEvent">Einlass</div>
     <h1>QR-Code <em>scannen</em></h1>
   </div>
+  <!-- Verbindung & Offline-Einlass -->
+  <div class="card" id="ciNet" style="margin-bottom:18px;padding:16px 20px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+    <span id="ciNetDot" style="width:12px;height:12px;border-radius:50%;background:#e5a13a;flex:0 0 12px;box-shadow:0 0 0 4px rgba(255,255,255,.06)"></span>
+    <div style="flex:1 1 240px;min-width:0">
+      <div id="ciNetTitle" style="font-weight:700">Verbindung wird geprüft …</div>
+      <div id="ciNetInfo" class="hint" style="margin:2px 0 0"></div>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="btnCiRefresh" type="button">Liste aktualisieren</button>
+  </div>
   <div class="card">
     <p class="sub">Kamera starten und den QR-Code des Tickets vor die Linse halten – der Check-in passiert automatisch.</p>
     <div id="scannerBox" style="position:relative;margin-top:14px;display:none">
@@ -56,7 +65,7 @@
       <button class="btn btn-ghost" id="btnScanPhoto">Foto scannen</button>
       <input type="file" id="scanPhoto" accept="image/*" capture="environment" style="display:none">
     </div>
-    <p class="hint" style="margin-top:10px">Erkennt der Live-Scanner nichts (z.&nbsp;B. unscharfe Laptop-Webcam), nutze <b>„Foto scannen“</b>. Am Handy funktioniert auch die normale Kamera-App: Der QR-Code öffnet die Ticketprüfung.</p>
+    <p class="hint" style="margin-top:10px">Erkennt der Live-Scanner nichts (z.&nbsp;B. unscharfe Laptop-Webcam), nutze <b>„Foto scannen“</b>. <b>Ohne Internet</b> prüft der Scanner gegen die gespeicherte Ticketliste und überträgt die Check-ins automatisch, sobald wieder Verbindung besteht – diese Seite dafür nicht schließen und vor dem Einlass einmal online öffnen.</p>
   </div>
 
   <div class="card" style="margin-top:18px">
@@ -76,7 +85,7 @@
 
 <script src="assets/supabase.js?v=20261107a"></script>
 <script src="assets/jsqr.js?v=20261107a"></script>
-<script src="assets/store.js?v=20261107a"></script>
-<script src="assets/einlass.js?v=20261107a"></script>
+<script src="assets/store.js?v=20261107b"></script>
+<script src="assets/einlass.js?v=20261107c"></script>
 </body>
 </html>

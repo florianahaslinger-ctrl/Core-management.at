@@ -28,6 +28,16 @@
     return m;
   }
 
+  // Fehler beim Einlass: Netzwerkprobleme (kein Internet, Zeitüberschreitung) als
+  // .offline markieren, damit der Scanner auf die Offline-Liste ausweichen kann.
+  // Datenbank-Fehler (z. B. „bereits eingecheckt“) haben einen PostgREST-Code.
+  function checkinErr(error) {
+    const raw = (error && error.message) || String(error || '');
+    const e = new Error(raw.replace(/^.*?: /, ''));
+    if (!error || !error.code || /failed to fetch|networkerror|load failed/i.test(raw)) e.offline = true;
+    return e;
+  }
+
   function mapOrder(o) {
     return {
       id: o.id, email: o.email, status: o.status, total: Number(o.total),
@@ -296,7 +306,7 @@
     // Login auf der Einlass-Seite (anon): prüft das Passwort, liefert Eventdaten.
     async verifyCheckinPassword(eventId, password) {
       const { data, error } = await sb.rpc('verify_checkin_password', { p_event: eventId, p_password: password });
-      if (error) throw new Error(error.message.replace(/^.*?: /, ''));
+      if (error) throw checkinErr(error);
       return data; // { ok, event, date, location } | { ok:false, reason? }
     },
     // Check-in per Passwort (anon), streng auf das Event begrenzt.
@@ -304,8 +314,20 @@
       const { data, error } = await sb.rpc('check_in_with_password', {
         p_event: eventId, p_password: password, p_code: this.extractCode(code)
       });
-      if (error) throw new Error(error.message.replace(/^.*?: /, ''));
+      if (error) throw checkinErr(error);
       return data; // { code, category, event, email, seat }
+    },
+    // Offline-Einlass: alle gültigen Tickets des Events (nur mit Einlass-Passwort)
+    async checkinTicketList(eventId, password) {
+      const { data, error } = await sb.rpc('checkin_ticket_list', { p_event: eventId, p_password: password });
+      if (error) throw checkinErr(error);
+      return data; // { event, generated_at, tickets:[{code,category,seat,name,email,checked_in,checked_in_at}] }
+    },
+    // Offline-Einlass: offline gescannte Check-ins nachträglich übertragen
+    async checkinSyncOffline(eventId, password, items) {
+      const { data, error } = await sb.rpc('checkin_sync_offline', { p_event: eventId, p_password: password, p_items: items });
+      if (error) throw checkinErr(error);
+      return data || []; // [{ code, status: ok|already|invalid|unknown, checked_in_at? }]
     },
 
     // Stripe Connect (Auszahlungskonto des Veranstalters)
