@@ -80,9 +80,6 @@
     })(t0);
   }
 
-  /* ---------- Laufband verdoppeln (nahtlos) ---------- */
-  $$('[data-dup]').forEach(tr => { tr.innerHTML += tr.innerHTML; });
-
   /* ---------- Spotlight auf den Kacheln ---------- */
   $$('.tile').forEach(t => t.addEventListener('pointermove', e => {
     const r = t.getBoundingClientRect();
