@@ -68,8 +68,8 @@ body.bt-home .nav-cta{border-radius:999px;text-transform:none;letter-spacing:0;f
 
 /* Hero */
 body.bt-home .hero{min-height:92vh}
-body.bt-home .hero-bg{filter:grayscale(.45) brightness(.45)}
-body.bt-home .hero::after{background:linear-gradient(105deg,rgba(31,61,43,.96) 0%,rgba(31,61,43,.86) 45%,rgba(31,61,43,.62) 100%)}
+body.bt-home .hero{background:radial-gradient(700px 520px at 88% 18%,rgba(139,92,246,.20),transparent 65%),radial-gradient(600px 420px at 10% 100%,rgba(232,220,196,.06),transparent 70%),var(--bt-green)}
+body.bt-home .hero::after{display:none}
 body.bt-home .hero h1{font-size:clamp(2.8rem,7vw,5.2rem);letter-spacing:-.04em}
 body.bt-home .hero-desc{font-size:clamp(1.05rem,1.5vw,1.2rem)}
 body.bt-home .hero-tags{border-top:0;padding-top:0;gap:10px}
