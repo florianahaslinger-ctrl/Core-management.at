@@ -118,7 +118,26 @@
       ' · ' + d.toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' }) + ' Uhr';
   }
 
-  function pageContent(t, order, imgName, idx, count, sponsorOps) {
+  // Birdie-Wortmarke (helle Variante) auf die grüne Kopfleiste gerendert → JPEG für das PDF.
+  const BRAND_H = 54;                     // Logo-Höhe in pt
+  async function loadBrandLogo() {
+    try {
+      const img = new Image();
+      await new Promise((res, rej) => {
+        img.onload = res; img.onerror = rej;
+        img.src = new URL('assets/birdie-logo-light.png?v=1', document.baseURI).href;
+      });
+      const w = img.naturalWidth, h = img.naturalHeight;
+      if (!w || !h) return null;
+      const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = '#1F3D2B'; ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      return { jpg: dataURLtoBytes(cv.toDataURL('image/jpeg', 0.92)), wPx: w, hPx: h };
+    } catch (_e) { return null; }
+  }
+
+  function pageContent(t, order, imgName, idx, count, sponsorOps, brand) {
     const eur = new Intl.NumberFormat('de-AT', { style: 'currency', currency: 'EUR' });
     const line = (x, y, font, size, color, text) =>
       color + ' rg\nBT /' + font + ' ' + size + ' Tf ' + x + ' ' + y + ' Td (' + pdfText(text) + ') Tj ET\n';
@@ -126,9 +145,15 @@
     let s = '';
     // Kopfleiste
     s += DARK + ' rg\n0 762 595 80 re f\n';
-    s += line(60, 800, 'F1', 22, BEIGE, 'BIRDIE TICKETS');
-    s += line(60, 778, 'F2', 10, BEIGE, 'Tickets für Bälle & Events');
-    s += line(455, 792, 'F1', 20, '0.655 0.545 0.98', 'TICKET');
+    if (brand) {
+      const bw = (BRAND_H * brand.wPx / brand.hPx).toFixed(2);
+      s += 'q ' + bw + ' 0 0 ' + BRAND_H + ' 56 ' + (802 - BRAND_H / 2) + ' cm /Bl Do Q\n';
+      s += line(380, 798, 'F2', 10, BEIGE, 'Tickets für Bälle & Events');
+    } else {
+      s += line(60, 800, 'F1', 22, BEIGE, 'BIRDIE TICKETS');
+      s += line(60, 778, 'F2', 10, BEIGE, 'Tickets für Bälle & Events');
+      s += line(455, 792, 'F1', 20, '0.655 0.545 0.98', 'TICKET');
+    }
 
     // Eventblock
     s += line(60, 700, 'F1', 21, '0 0 0', t.eventName);
@@ -395,12 +420,15 @@
     // Sponsor-Logos einmalig laden (auf allen Seiten dieselben, als geteilte XObjects).
     const sponsors = await loadSponsorImages(logos || (order && order.sponsorLogos) || []);
     const spOps = sponsorOps(sponsors);
-    // Objekt 1: Catalog, 2: Pages, 3: F1, 4: F2,
+    const brand = await loadBrandLogo();
+    // Objekt 1: Catalog, 2: Pages, 3: F1, 4: F2, (5: Birdie-Logo),
     // dann S geteilte Sponsor-Bilder, danach pro Ticket: QR-Bild, Inhalt, Seite.
-    const SPONSOR_BASE = 5;                       // erstes Sponsor-Bildobjekt
+    const BRAND_OBJ = 5;
+    const SPONSOR_BASE = brand ? 6 : 5;           // erstes Sponsor-Bildobjekt
     const FIRST_DYNAMIC = SPONSOR_BASE + sponsors.length;
     // Ressourcen-Eintrag für die geteilten Sponsor-Bilder (auf jeder Seite gültig)
-    const spRes = sponsors.map((_s, k) => '/Sp' + k + ' ' + (SPONSOR_BASE + k) + ' 0 R').join(' ');
+    const spRes = sponsors.map((_s, k) => '/Sp' + k + ' ' + (SPONSOR_BASE + k) + ' 0 R').join(' ') +
+      (brand ? ' /Bl ' + BRAND_OBJ + ' 0 R' : '');
 
     tickets.forEach((t, i) => {
       const pageObj = FIRST_DYNAMIC + i * 3 + 2;
@@ -411,6 +439,8 @@
     objects.push(['<< /Type /Pages /Kids [' + pageRefs.join(' ') + '] /Count ' + tickets.length + ' >>']);
     objects.push(['<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>']);
     objects.push(['<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>']);
+
+    if (brand) objects.push(imgObject(brand));
 
     // Geteilte Sponsor-Bildobjekte
     sponsors.forEach((sp) => {
@@ -432,7 +462,7 @@
         jpg,
         '\nendstream'
       ]);
-      const content = pageContent(t, order, 'Im' + i, i + 1, tickets.length, spOps);
+      const content = pageContent(t, order, 'Im' + i, i + 1, tickets.length, spOps, brand);
       objects.push([
         '<< /Length ' + latin1(content).length + ' >>\nstream\n' + content + '\nendstream'
       ]);
