@@ -1,0 +1,197 @@
+/* =========================================================
+   Birdie Tickets – modernes Design für die KUNDENSEITEN
+   (Startseite, Ticketshop/Meine Tickets, Ticketprüfung).
+   Liegt über shop.css bzw. den Startseiten-Styles. Dashboard,
+   Einlass und Saalplan-Editor laden diese Datei NICHT.
+
+   Farben: 60 % Grün #1F3D2B · 30 % Beige #E8DCC4 · 10 % Violett #8B5CF6
+   Stil: runde Sans-Serif, Pillen-Buttons, weiche Karten, viel Luft.
+   ========================================================= */
+:root{
+  --bt-green:#1F3D2B; --bt-green-2:#264A35; --bt-green-3:#2E5640; --bt-green-deep:#183022;
+  --bt-beige:#E8DCC4; --bt-beige-2:#F3ECDD; --bt-beige-mute:#B9B09A;
+  --bt-violet:#8B5CF6; --bt-violet-2:#A78BFA; --bt-violet-soft:rgba(139,92,246,.16);
+  --bt-ink:#1F3D2B; --bt-ink-mute:#4E6354;
+  --bt-radius:22px; --bt-radius-sm:14px;
+  --bt-font:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --bt-shadow:0 24px 60px -32px rgba(10,22,15,.75);
+}
+
+/* ---------- Gemeinsam: Schrift, Logo, Buttons ---------- */
+body.bt, body.bt-home{font-family:var(--bt-font);font-weight:400;letter-spacing:-.005em}
+body.bt h1, body.bt h2, body.bt h3, body.bt-home h1, body.bt-home h2, body.bt-home h3{
+  font-family:var(--bt-font) !important;font-weight:800;letter-spacing:-.025em;line-height:1.08}
+body.bt h1 em, body.bt h2 em, body.bt-home h1 em, body.bt-home h2 em, body.bt-home h3 em{
+  font-style:normal;color:var(--bt-violet-2);
+  background:linear-gradient(transparent 62%,rgba(139,92,246,.28) 62%);padding:0 .06em}
+
+/* Logo: „● birdie tickets“ */
+body.bt .logo, body.bt-home .logo, body.bt-home .footer-logo{
+  font-family:var(--bt-font) !important;font-size:21px !important;letter-spacing:-.03em !important;
+  text-transform:lowercase;font-weight:500;color:var(--bt-beige);display:inline-flex;align-items:center;gap:0}
+body.bt .logo::before, body.bt-home .logo::before, body.bt-home .footer-logo::before{
+  content:"";width:.62em;height:.62em;border-radius:50%;background:var(--bt-violet);margin-right:.42em;
+  box-shadow:0 0 0 4px rgba(139,92,246,.18)}
+body.bt .logo span, body.bt-home .logo span, body.bt-home .footer-logo span{color:var(--bt-beige) !important;font-weight:800;margin-right:.28em}
+
+/* Buttons: Pillen, keine Großbuchstaben */
+body.bt .btn, body.bt-home .btn{border-radius:999px !important;text-transform:none !important;letter-spacing:0 !important;
+  font-family:var(--bt-font);font-weight:700;font-size:15px}
+body.bt-home .btn{padding:15px 28px}
+body.bt .btn-gold, body.bt-home .btn-gold{background:var(--bt-violet) !important;color:#fff !important;
+  box-shadow:0 12px 28px -12px rgba(139,92,246,.75) !important}
+body.bt .btn-gold:hover, body.bt-home .btn-gold:hover{background:#7C4DF0 !important;transform:translateY(-2px)}
+body.bt .btn-ghost, body.bt-home .btn-ghost{background:transparent;color:var(--bt-beige) !important;
+  border:1.5px solid rgba(232,220,196,.35) !important}
+body.bt .btn-ghost:hover, body.bt-home .btn-ghost:hover{border-color:var(--bt-beige) !important;background:rgba(232,220,196,.06) !important}
+
+/* =========================================================
+   STARTSEITE
+   ========================================================= */
+body.bt-home{background:var(--bt-green)}
+body.bt-home section{padding:clamp(72px,9vw,120px) 0}
+
+/* Kleine Überschriften als Pillen statt Linie + Versalien */
+body.bt-home .label{background:var(--bt-violet-soft);color:#CBB8FF;border-radius:999px;padding:7px 15px;
+  font-size:.82rem;letter-spacing:0;text-transform:none;font-weight:700}
+body.bt-home .label::before{width:7px;height:7px;border-radius:50%;background:var(--bt-violet-2);opacity:1}
+body.bt-home .chip{border-radius:999px;letter-spacing:0;text-transform:none;font-size:.82rem;font-weight:700;padding:8px 16px}
+body.bt-home h2.head{font-size:clamp(2.1rem,4.6vw,3.2rem)}
+body.bt-home .sub{font-size:1.05rem;color:var(--bt-beige-mute)}
+
+/* Navigation */
+body.bt-home nav ul a{font-size:.92rem;letter-spacing:0;font-weight:500}
+body.bt-home .nav-cta{border-radius:999px;text-transform:none;letter-spacing:0;font-size:.9rem;font-weight:700;padding:11px 20px}
+@media (max-width:860px){
+  body.bt-home nav.open ul{background:rgba(24,48,34,.98)}
+}
+
+/* Hero */
+body.bt-home .hero{min-height:92vh}
+body.bt-home .hero-bg{filter:grayscale(.45) brightness(.45)}
+body.bt-home .hero::after{background:linear-gradient(105deg,rgba(31,61,43,.96) 0%,rgba(31,61,43,.86) 45%,rgba(31,61,43,.62) 100%)}
+body.bt-home .hero h1{font-size:clamp(2.8rem,7vw,5.2rem);letter-spacing:-.04em}
+body.bt-home .hero-desc{font-size:clamp(1.05rem,1.5vw,1.2rem)}
+body.bt-home .hero-tags{border-top:0;padding-top:0;gap:10px}
+body.bt-home .hero-tag{background:rgba(232,220,196,.08);border:1px solid rgba(232,220,196,.14);border-radius:999px;
+  padding:7px 14px;font-size:.84rem;color:var(--bt-beige)}
+body.bt-home .hero-tag::before{border-radius:50%;transform:none;width:7px;height:7px;background:var(--bt-violet-2)}
+body.bt-home .hero-scroll{display:none}
+
+/* Kennzahlen: beige Fläche, Zahlen als runde Karten */
+body.bt-home .stats{background:var(--bt-beige);border:0}
+body.bt-home .stats-grid{gap:16px;padding:34px clamp(20px,5vw,40px);max-width:1180px;margin:0 auto}
+body.bt-home .stat{background:var(--bt-beige-2);border:0 !important;border-radius:var(--bt-radius);
+  box-shadow:0 14px 34px -26px rgba(31,61,43,.6);padding:34px 24px}
+body.bt-home .stat-num{font-family:var(--bt-font);font-weight:800;letter-spacing:-.03em;font-size:clamp(2.2rem,4vw,3rem);color:var(--bt-violet)}
+body.bt-home .stat-label{color:var(--bt-ink-mute);font-weight:500}
+
+/* Funktionen: einzelne runde Karten statt Raster mit Linien */
+body.bt-home .feat-grid{gap:18px;background:none;border:0}
+body.bt-home .feat{background:var(--bt-green-2);border:1px solid rgba(232,220,196,.08);border-radius:var(--bt-radius);
+  transition:transform .25s ease,background .25s ease}
+body.bt-home .feat:hover{background:var(--bt-green-3);transform:translateY(-4px)}
+body.bt-home .feat-ico{border:0;border-radius:16px;background:var(--bt-violet-soft);color:var(--bt-violet-2)}
+body.bt-home .feat h3{font-family:var(--bt-font);font-weight:700;font-size:1.15rem}
+body.bt-home .row-text h3{font-family:var(--bt-font);font-weight:800}
+body.bt-home .row-list li::before{content:"✓";color:#fff;background:var(--bt-violet);width:22px;height:22px;flex:0 0 22px;
+  border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800}
+
+/* Ticket- und Sitzplan-Vorschau */
+body.bt-home .ticket{background:linear-gradient(150deg,var(--bt-green-3),var(--bt-green-deep));border:1px solid rgba(232,220,196,.12);
+  border-radius:26px;box-shadow:var(--bt-shadow)}
+body.bt-home .ticket-top .t-ev{font-family:var(--bt-font);font-weight:800;letter-spacing:-.02em;font-size:1.35rem}
+body.bt-home .ticket-top .t-cat{border-radius:999px;letter-spacing:0;text-transform:none;font-weight:700;font-size:.74rem}
+body.bt-home .t-logo, body.bt-home .ticket-info .t-code{font-family:var(--bt-font);font-weight:800;letter-spacing:-.01em}
+body.bt-home .qr{border-radius:14px}
+body.bt-home .seatgrid{background:linear-gradient(160deg,var(--bt-green-3),var(--bt-green-deep));border:1px solid rgba(232,220,196,.12);
+  border-radius:26px;box-shadow:var(--bt-shadow)}
+body.bt-home .stage{border-radius:999px;letter-spacing:.12em}
+body.bt-home .seats i{border-radius:50%}
+
+/* Ablauf: beige Fläche, Schritte als Karten mit runder Nummer */
+body.bt-home .steps-sec{background:var(--bt-beige);border:0}
+body.bt-home .steps{gap:18px}
+body.bt-home .step{background:var(--bt-beige-2);border-radius:var(--bt-radius);padding:30px 28px;
+  box-shadow:0 14px 34px -26px rgba(31,61,43,.6)}
+body.bt-home .step-num{font-family:var(--bt-font);font-weight:800;font-size:1.1rem;letter-spacing:0;opacity:1;
+  width:46px;height:46px;border-radius:50%;background:var(--bt-violet);color:#fff;display:inline-flex;align-items:center;justify-content:center}
+body.bt-home .step h3{font-family:var(--bt-font);font-weight:800;border-top:0;padding-top:0;margin-top:18px}
+body.bt-home .steps-sec .label{background:rgba(139,92,246,.14);color:#6D3FE0}
+
+/* Tennis-Teaser: runde Karte statt Balken */
+body.bt-home .tennis{background:var(--bt-green);border:0}
+body.bt-home .tennis .inner{background:linear-gradient(160deg,var(--bt-green-3),var(--bt-green-deep));border:1px solid rgba(232,220,196,.1);
+  border-radius:32px;padding:clamp(40px,6vw,70px) clamp(24px,5vw,60px);max-width:900px}
+body.bt-home .tennis-feats div::before{border-radius:50%;transform:none;background:var(--bt-violet-2)}
+
+/* Demo-Formular */
+body.bt-home .demo-form{background:var(--bt-green-2);border:1px solid rgba(232,220,196,.1);border-radius:26px;box-shadow:var(--bt-shadow)}
+body.bt-home .demo-form h3{font-family:var(--bt-font);font-weight:800}
+body.bt-home .demo-details .lbl, body.bt-home .fg label{letter-spacing:0;text-transform:none;font-size:.85rem;font-weight:600}
+body.bt-home .fg input, body.bt-home .fg select, body.bt-home .fg textarea{border-radius:var(--bt-radius-sm);background:var(--bt-green-deep);
+  border:1.5px solid rgba(232,220,196,.12);font-family:var(--bt-font)}
+body.bt-home .fg input:focus, body.bt-home .fg select:focus, body.bt-home .fg textarea:focus{border-color:var(--bt-violet);box-shadow:0 0 0 4px rgba(139,92,246,.18)}
+
+/* Fußzeile */
+body.bt-home .socials a{border-radius:50%}
+
+/* =========================================================
+   TICKETSHOP · MEINE TICKETS · TICKETPRÜFUNG  (body.bt)
+   ========================================================= */
+body.bt{background:radial-gradient(1000px 600px at 85% -10%,rgba(139,92,246,.12),transparent 60%),var(--bt-green);background-attachment:fixed}
+body.bt .shop-nav{background:rgba(31,61,43,.86);border-bottom:1px solid rgba(232,220,196,.08)}
+body.bt .shop-nav .links a{font-weight:500;font-size:15px}
+body.bt .shop-nav .links a:not(.nav-user)::after{height:2px;border-radius:2px}
+body.bt .nav-user{border-radius:999px;padding:8px 16px;font-weight:600;color:var(--bt-beige);background:rgba(232,220,196,.06);border-color:rgba(232,220,196,.2)}
+
+body.bt .page-head .eyebrow{background:var(--bt-violet-soft);color:#CBB8FF;border-radius:999px;padding:6px 14px;
+  font-size:13px;letter-spacing:0;text-transform:none;font-weight:700}
+body.bt .page-head .eyebrow::before{width:7px;height:7px;border-radius:50%;background:var(--bt-violet-2);opacity:1}
+body.bt .page-head h1{font-weight:800;font-size:clamp(34px,5vw,54px)}
+
+body.bt .card{background:var(--bt-green-2);border:1px solid rgba(232,220,196,.09);border-radius:var(--bt-radius);
+  padding:30px;box-shadow:var(--bt-shadow)}
+body.bt .card::before{display:none}
+body.bt .card h2{font-weight:800;font-size:26px}
+body.bt .event-head h2{font-size:28px}
+body.bt .event-meta b{color:var(--bt-violet-2);font-weight:700}
+body.bt #eventList .card:hover{border-color:rgba(139,92,246,.45);box-shadow:0 28px 60px -32px rgba(139,92,246,.45)}
+
+body.bt .cat-row{border-radius:var(--bt-radius-sm);border-top:1px solid rgba(232,220,196,.07)}
+body.bt .cat-info .name{font-weight:700;letter-spacing:-.01em}
+body.bt .cat-price{font-family:var(--bt-font);font-weight:800;font-size:22px;letter-spacing:-.02em;color:var(--bt-beige);text-shadow:none}
+body.bt .qty{border-radius:999px;border:1.5px solid rgba(232,220,196,.18);background:var(--bt-green-deep)}
+body.bt .qty button{color:var(--bt-beige);font-weight:700}
+body.bt .qty button:hover{background:var(--bt-violet);color:#fff}
+body.bt .qty input[type=text], body.bt .qty input{width:46px;height:38px;padding:0;border-radius:0;background:transparent;border:0;
+  border-left:1px solid rgba(232,220,196,.12);border-right:1px solid rgba(232,220,196,.12);font-weight:700;box-shadow:none}
+
+body.bt .cart-bar{background:rgba(24,48,34,.94);border-top:0;box-shadow:0 -20px 50px -24px rgba(0,0,0,.7);
+  border-radius:24px 24px 0 0}
+body.bt .cart-bar .sum{font-family:var(--bt-font);font-weight:800;letter-spacing:-.02em;color:var(--bt-beige);text-shadow:none}
+
+body.bt label{letter-spacing:0;text-transform:none;font-size:13.5px;font-weight:600;color:var(--bt-beige-mute)}
+body.bt input[type=text], body.bt input[type=email], body.bt input[type=number], body.bt input[type=password], body.bt textarea, body.bt select{
+  border-radius:var(--bt-radius-sm);background:var(--bt-green-deep);border:1.5px solid rgba(232,220,196,.14);font-family:var(--bt-font)}
+body.bt input:focus, body.bt textarea:focus, body.bt select:focus{border-color:var(--bt-violet);box-shadow:0 0 0 4px rgba(139,92,246,.18)}
+
+body.bt .modal{background:var(--bt-green-2);border:1px solid rgba(232,220,196,.1);border-radius:26px;box-shadow:0 40px 90px -30px rgba(0,0,0,.85)}
+body.bt .modal h2{font-weight:800}
+body.bt .code-input, body.bt .demo-code{font-family:var(--bt-font) !important;font-weight:800;border-radius:var(--bt-radius-sm)}
+body.bt .msg{border-radius:var(--bt-radius-sm)}
+
+body.bt .ticket{background:linear-gradient(140deg,var(--bt-green-3),var(--bt-green-deep));border:1px solid rgba(232,220,196,.1);
+  border-radius:var(--bt-radius);box-shadow:var(--bt-shadow)}
+body.bt .ticket::before{background:var(--bt-violet);box-shadow:none;width:5px}
+body.bt .ticket .qr{border-radius:14px}
+body.bt .ticket .tcode{font-family:var(--bt-font);font-weight:800;letter-spacing:.04em;color:var(--bt-beige)}
+body.bt .badge{border-radius:999px;letter-spacing:0;text-transform:none;font-weight:700;font-size:12px}
+
+body.bt footer.shop-footer{border-top:1px solid rgba(232,220,196,.08)}
+body.bt .seat-howto, body.bt .seat-map, body.bt .seat-stage{border-radius:var(--bt-radius-sm)}
+
+/* Ticketprüfung (ticket.html) & Kassa-Summe */
+body.bt .status-title{font-family:var(--bt-font);font-weight:800;letter-spacing:-.025em;font-size:30px}
+body.bt .status-code{font-family:var(--bt-font);font-weight:800;letter-spacing:.06em;font-size:22px;color:var(--bt-violet-2)}
+body.bt #checkoutTotal{font-family:var(--bt-font) !important;font-weight:800;letter-spacing:-.02em;color:var(--bt-beige) !important}
