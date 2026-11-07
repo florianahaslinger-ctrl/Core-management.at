@@ -3,237 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Birdie Tickets – Ticketsystem für Bälle</title>
-<meta name="description" content="Birdie Tickets ist das Ticketsystem für Bälle: eigener Online-Ticketshop, interaktiver Sitzplan, QR-Einlass, sichere Bezahlung und direkte Auszahlung per Stripe. Plus Buchungssystem für Tennisclubs. Jetzt Demo anfragen.">
-<meta property="og:title" content="Birdie Tickets – Ticketsystem für Bälle">
+<title>Birdie Tickets – Dein Ticket, dein Höhenflug</title>
+<meta name="description" content="Birdie Tickets – dein Ticket, dein Höhenflug. Das Ticketsystem für Bälle und Events: eigener Online-Ticketshop, interaktiver Sitzplan, QR-Einlass und Auszahlung direkt per Stripe. Plus Buchungssystem für Tennisclubs.">
+<meta property="og:title" content="Birdie Tickets – Dein Ticket, dein Höhenflug">
 <meta property="og:description" content="Verkauft eure Balltickets komplett online: Shop, Sitzplan, QR-Einlass, Auszahlung per Stripe. Auch als Buchungssystem für Tennisclubs.">
 <meta property="og:type" content="website">
+<meta name="theme-color" content="#143323">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,700&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" href="favicon.png?v=2">
-<style>
-  :root {
-    --gold: #8B5CF6;
-    --gold-light: #A78BFA;
-    --gold-dim: rgba(139,92,246,0.14);
-    --black: #1F3D2B;
-    --dark: #1B3727;
-    --dark2: #264A35;
-    --panel: #22442F;
-    --line: rgba(139,92,246,0.18);
-    --line-soft: rgba(232,220,196,0.08);
-    --white: #E8DCC4;
-    --gray: #B5AC97;
-    --gray-dim: #8E8875;
-  }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
-  body { background: var(--black); color: var(--white); font-family: 'DM Sans', system-ui, sans-serif; line-height: 1.6; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
-  a { color: inherit; text-decoration: none; }
-  img { max-width: 100%; display: block; }
-  ::selection { background: var(--gold); color: var(--black); }
-  ::-webkit-scrollbar { width: 3px; }
-  ::-webkit-scrollbar-track { background: var(--black); }
-  ::-webkit-scrollbar-thumb { background: var(--gold); }
-
-  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 40px); }
-  section { padding: clamp(80px, 11vw, 140px) 0; position: relative; }
-
-  /* --- Shared type --- */
-  .label { display: inline-flex; align-items: center; gap: 12px; font-family: 'DM Sans'; font-size: 0.66rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--gold); font-weight: 500; }
-  .label::before { content: ''; width: 28px; height: 1px; background: var(--gold); opacity: 0.7; }
-  .chip { display: inline-flex; align-items: center; gap: 9px; font-size: 0.62rem; letter-spacing: 0.24em; text-transform: uppercase; color: #fff; background: var(--gold); padding: 8px 16px; font-weight: 600; box-shadow: 0 8px 26px rgba(139,92,246,0.28); }
-  .chip::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #fff; }
-  h1, h2, h3 { font-family: 'Cormorant Garamond', serif; font-weight: 500; line-height: 1.06; letter-spacing: -0.01em; }
-  h2.head { font-size: clamp(2.3rem, 5vw, 3.5rem); margin: 22px 0 0; }
-  h2.head em, h1 em { font-style: italic; color: var(--gold); }
-  .sub { color: var(--gray); font-size: 1.02rem; line-height: 1.75; max-width: 560px; }
-
-  /* --- Buttons --- */
-  .btn { display: inline-flex; align-items: center; gap: 10px; font-family: 'DM Sans'; font-size: 0.74rem; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 500; padding: 17px 34px; border: 1px solid transparent; cursor: pointer; transition: all 0.25s ease; }
-  .btn-gold { background: var(--gold); color: #fff; box-shadow: 0 10px 34px rgba(139,92,246,0.32); }
-  .btn-gold:hover { background: var(--gold-light); transform: translateY(-2px); box-shadow: 0 16px 44px rgba(139,92,246,0.45); }
-  .btn-ghost { background: transparent; color: var(--white); border-color: rgba(232,220,196,0.25); }
-  .btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
-
-  /* --- Reveal --- */
-  .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.8s ease, transform 0.8s ease; }
-  .reveal.visible { opacity: 1; transform: none; }
-  .d1 { transition-delay: 0.08s; } .d2 { transition-delay: 0.16s; } .d3 { transition-delay: 0.24s; } .d4 { transition-delay: 0.32s; }
-
-  /* --- NAV --- */
-  nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 22px clamp(20px,5vw,50px); display: flex; align-items: center; justify-content: space-between; transition: background 0.3s, padding 0.3s, border-color 0.3s; border-bottom: 1px solid transparent; }
-  nav.scrolled { background: rgba(31,61,43,0.9); backdrop-filter: blur(14px); padding-top: 15px; padding-bottom: 15px; border-color: var(--line-soft); }
-  .logo { font-family: 'Bebas Neue'; font-size: 1.5rem; letter-spacing: 0.14em; }
-  .logo span { color: var(--gold); }
-  nav ul { list-style: none; display: flex; gap: 34px; }
-  nav ul a { font-size: 0.82rem; letter-spacing: 0.04em; color: var(--gray); transition: color 0.2s; }
-  nav ul a:hover { color: var(--white); }
-  .nav-cta { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; color: #fff; background: var(--gold); padding: 12px 22px; transition: all 0.2s; }
-  .nav-cta:hover { background: var(--gold-light); }
-  .nav-toggle { display: none; background: none; border: 0; color: var(--white); font-size: 1.6rem; cursor: pointer; }
-  @media (max-width: 860px) {
-    nav ul, nav .nav-cta { display: none; }
-    nav.open ul { display: flex; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; gap: 0; background: rgba(10,10,10,0.98); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line-soft); padding: 10px 0; }
-    nav.open ul li { padding: 0 clamp(20px,5vw,50px); }
-    nav.open ul a { display: block; padding: 14px 0; border-bottom: 1px solid var(--line-soft); }
-    .nav-toggle { display: block; }
-  }
-
-  /* --- HERO --- */
-  .hero { min-height: 100vh; display: flex; align-items: center; padding: 120px 0 90px; overflow: hidden; }
-  .hero-bg { position: absolute; inset: 0; background-size: cover; background-position: center; filter: grayscale(0.3) brightness(0.5); transform: scale(1.05); }
-  .hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(105deg, rgba(31,61,43,0.94) 0%, rgba(31,61,43,0.82) 42%, rgba(31,61,43,0.55) 100%); }
-  .hero-glow { position: absolute; top: -20%; right: -10%; width: 60%; height: 90%; background: radial-gradient(closest-side, rgba(139,92,246,0.16), transparent 72%); pointer-events: none; z-index: 1; }
-  .hero .wrap { position: relative; z-index: 2; width: 100%; }
-  .hero-content { max-width: 720px; }
-  .hero h1 { font-size: clamp(3rem, 8vw, 6rem); margin: 26px 0 0; }
-  .hero-desc { color: rgba(232,220,196,0.82); font-size: clamp(1.02rem, 1.6vw, 1.2rem); line-height: 1.7; max-width: 540px; margin: 26px 0 0; }
-  .hero-actions { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 40px; }
-  .hero-tags { display: flex; gap: 10px 26px; flex-wrap: wrap; margin-top: 44px; padding-top: 26px; border-top: 1px solid var(--line-soft); }
-  .hero-tag { display: flex; align-items: center; gap: 9px; font-size: 0.8rem; color: var(--gray); }
-  .hero-tag::before { content: ''; width: 6px; height: 6px; background: var(--gold); transform: rotate(45deg); }
-  .hero-scroll { position: absolute; bottom: 34px; left: 50%; transform: translateX(-50%); z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 10px; font-size: 0.62rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--gray-dim); }
-  .hero-scroll span { writing-mode: vertical-rl; }
-  .hero-scroll .ln { width: 1px; height: 46px; background: linear-gradient(var(--gold), transparent); }
-
-  /* --- STATS --- */
-  .stats { border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); background: var(--dark); }
-  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); }
-  .stat { padding: clamp(40px,6vw,68px) clamp(20px,4vw,44px); text-align: center; border-right: 1px solid var(--line-soft); }
-  .stat:last-child { border-right: 0; }
-  .stat-num { font-family: 'Bebas Neue'; font-size: clamp(2.6rem, 5vw, 3.6rem); color: var(--gold); letter-spacing: 0.02em; line-height: 1; }
-  .stat-label { color: var(--gray); font-size: 0.9rem; margin-top: 12px; letter-spacing: 0.01em; }
-  @media (max-width: 720px) { .stats-grid { grid-template-columns: 1fr; } .stat { border-right: 0; border-bottom: 1px solid var(--line-soft); } .stat:last-child { border-bottom: 0; } }
-
-  /* --- FEATURES --- */
-  .sec-head { max-width: 640px; }
-  .feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: 64px; background: var(--line-soft); border: 1px solid var(--line-soft); }
-  .feat { background: var(--black); padding: clamp(28px,3.4vw,42px); transition: background 0.3s; }
-  .feat:hover { background: var(--dark2); }
-  .feat-ico { width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--line); color: var(--gold); margin-bottom: 22px; }
-  .feat-ico svg { width: 22px; height: 22px; }
-  .feat h3 { font-family: 'DM Sans'; font-weight: 500; font-size: 1.12rem; letter-spacing: 0.01em; }
-  .feat p { color: var(--gray); font-size: 0.92rem; line-height: 1.65; margin-top: 10px; }
-  @media (max-width: 900px) { .feat-grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 560px) { .feat-grid { grid-template-columns: 1fr; } }
-
-  /* --- HIGHLIGHT ROWS --- */
-  .rows { display: flex; flex-direction: column; gap: clamp(70px,9vw,120px); margin-top: 30px; }
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(36px,6vw,80px); align-items: center; }
-  .row.rev .row-visual { order: 2; }
-  .row-text h3 { font-family: 'Cormorant Garamond'; font-size: clamp(1.9rem,3.4vw,2.7rem); margin: 18px 0 0; }
-  .row-text h3 em { font-style: italic; color: var(--gold); }
-  .row-list { list-style: none; margin-top: 24px; display: flex; flex-direction: column; gap: 12px; }
-  .row-list li { display: flex; gap: 12px; color: var(--gray); font-size: 0.96rem; }
-  .row-list li::before { content: '✦'; color: var(--gold); }
-  @media (max-width: 820px) { .row, .row.rev { grid-template-columns: 1fr; } .row.rev .row-visual { order: 0; } }
-
-  /* Ticket mock */
-  .mock { position: relative; }
-  .ticket { background: linear-gradient(140deg, #17130c, #221a0e); border: 1px solid var(--line); border-radius: 14px; padding: 26px; box-shadow: 0 30px 70px rgba(0,0,0,0.6); max-width: 400px; margin: 0 auto; }
-  .ticket-top { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 18px; border-bottom: 1px dashed rgba(139,92,246,0.4); }
-  .ticket-top .t-ev { font-family: 'Cormorant Garamond'; font-size: 1.5rem; color: var(--white); }
-  .ticket-top .t-cat { display: inline-block; margin-top: 8px; font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: #fff; background: var(--gold); padding: 4px 10px; }
-  .t-logo { font-family: 'Bebas Neue'; font-size: 1.1rem; letter-spacing: 0.1em; color: var(--gold); }
-  .ticket-body { display: flex; gap: 20px; align-items: center; padding-top: 20px; }
-  .qr { width: 92px; height: 92px; flex: 0 0 92px; background:
-      conic-gradient(from 0deg, #0000 0 25%, #000 0 50%, #0000 0 75%, #000 0) 0 0/16px 16px,
-      #fff; padding: 8px; border-radius: 6px; }
-  .qr i { display: block; width: 100%; height: 100%; background:
-      linear-gradient(#21422F 0 0) 0 0/100% 12px no-repeat,
-      linear-gradient(#21422F 0 0) 0 100%/100% 12px no-repeat,
-      linear-gradient(#21422F 0 0) 0 0/12px 100% no-repeat,
-      linear-gradient(#21422F 0 0) 100% 0/12px 100% no-repeat,
-      repeating-linear-gradient(90deg, #21422F 0 6px, #fff 6px 12px) center/60% 60% no-repeat; }
-  .ticket-info .t-lbl { font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gray-dim); }
-  .ticket-info .t-code { font-family: 'Bebas Neue'; font-size: 1.5rem; letter-spacing: 0.08em; color: var(--white); margin: 2px 0 12px; }
-  .ticket-info .t-seat { font-size: 0.86rem; color: var(--gold-light); }
-
-  /* Seat mock */
-  .seatgrid { background: linear-gradient(160deg, #21422F, #171310); border: 1px solid var(--line); border-radius: 14px; padding: 28px; box-shadow: 0 30px 70px rgba(0,0,0,0.6); max-width: 420px; margin: 0 auto; }
-  .stage { text-align: center; font-size: 0.6rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--gray-dim); border: 1px solid var(--line-soft); padding: 7px; margin-bottom: 20px; }
-  .seats { display: grid; grid-template-columns: repeat(10, 1fr); gap: 7px; }
-  .seats i { aspect-ratio: 1; border-radius: 3px; background: rgba(232,220,196,0.1); }
-  .seats i.sold { background: rgba(139,92,246,0.25); }
-  .seats i.sel { background: var(--gold); box-shadow: 0 0 12px rgba(139,92,246,0.7); }
-  .seat-legend { display: flex; gap: 18px; justify-content: center; margin-top: 20px; font-size: 0.72rem; color: var(--gray); }
-  .seat-legend span { display: flex; align-items: center; gap: 7px; }
-  .seat-legend b { width: 11px; height: 11px; border-radius: 2px; display: inline-block; }
-
-  /* --- STEPS --- */
-  .steps-sec { background: var(--dark); border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); }
-  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(30px,4vw,54px); margin-top: 58px; }
-  .step-num { font-family: 'Bebas Neue'; font-size: 3.4rem; color: var(--gold); line-height: 1; opacity: 0.85; }
-  .step h3 { font-family: 'DM Sans'; font-weight: 500; font-size: 1.2rem; margin: 14px 0 10px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
-  .step p { color: var(--gray); font-size: 0.94rem; line-height: 1.65; }
-
-  /* Birdie Tickets: helle Beige-Flächen (30 % der Farbaufteilung) mit grüner Schrift */
-  .stats, .steps-sec { background: var(--white); color: var(--black); border-color: rgba(31,61,43,0.12); }
-  .stat { border-right-color: rgba(31,61,43,0.14); }
-  .stat-label, .steps-sec .step p { color: #4A5E4F; }
-  .steps-sec h2.head { color: var(--black); }
-  .steps-sec .step h3 { color: var(--black); border-top-color: rgba(31,61,43,0.18); }
-  @media (max-width: 720px) { .stat { border-bottom-color: rgba(31,61,43,0.14); } }
-  @media (max-width: 760px) { .steps { grid-template-columns: 1fr; } }
-
-  /* --- TENNIS --- */
-  .tennis { overflow: hidden; background: radial-gradient(120% 130% at 85% 0%, #12200f 0%, #0d160b 45%, var(--black) 100%); border-top: 2px solid var(--gold); border-bottom: 2px solid var(--gold); }
-  .tennis::before { content: ''; position: absolute; top: -30%; left: -10%; width: 55%; height: 120%; background: radial-gradient(closest-side, rgba(139,92,246,0.14), transparent 70%); pointer-events: none; }
-  .tennis .wrap { position: relative; z-index: 1; text-align: center; }
-  .tennis .inner { max-width: 780px; margin: 0 auto; }
-  .tennis h2 { font-size: clamp(2.3rem, 5.4vw, 3.5rem); margin: 24px 0 0; }
-  .tennis h2 em { font-style: italic; color: var(--gold); }
-  .tennis .sub { margin: 22px auto 0; max-width: 640px; text-align: center; }
-  .tennis-feats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px 40px; max-width: 620px; margin: 40px auto 0; text-align: left; }
-  .tennis-feats div { display: flex; gap: 12px; color: var(--gray); font-size: 0.95rem; }
-  .tennis-feats div::before { content: ''; width: 7px; height: 7px; margin-top: 7px; background: var(--gold); transform: rotate(45deg); flex: 0 0 7px; }
-  .tennis-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-top: 46px; }
-  @media (max-width: 560px) { .tennis-feats { grid-template-columns: 1fr; } }
-
-  /* --- DEMO / CONTACT --- */
-  .demo { background: var(--black); }
-  .demo-grid { display: grid; grid-template-columns: 0.85fr 1fr; gap: clamp(40px,6vw,80px); align-items: start; }
-  .demo-info h2 { font-size: clamp(2.3rem,4.6vw,3.3rem); margin-top: 20px; }
-  .demo-info .sub { margin-top: 20px; }
-  .demo-details { margin-top: 38px; display: flex; flex-direction: column; gap: 22px; }
-  .demo-details .lbl { font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); }
-  .demo-details .val { font-size: 1.05rem; margin-top: 4px; }
-  .demo-form { background: var(--dark2); border: 1px solid var(--line-soft); padding: clamp(28px,4vw,44px); }
-  .demo-form h3 { font-family: 'DM Sans'; font-weight: 500; font-size: 1.3rem; margin-bottom: 24px; }
-  .fg { margin-bottom: 18px; }
-  .fg label { display: block; font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gray); margin-bottom: 8px; }
-  .fg input, .fg select, .fg textarea { width: 100%; background: var(--black); border: 1px solid var(--line-soft); color: var(--white); padding: 13px 15px; font-family: 'DM Sans'; font-size: 0.95rem; transition: border-color 0.2s; }
-  .fg input:focus, .fg select:focus, .fg textarea:focus { outline: none; border-color: var(--gold); }
-  .fg textarea { resize: vertical; min-height: 96px; }
-  .fg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .submit-btn { width: 100%; margin-top: 6px; justify-content: center; }
-  @media (max-width: 820px) { .demo-grid { grid-template-columns: 1fr; } }
-  @media (max-width: 480px) { .fg-row { grid-template-columns: 1fr; } }
-
-  /* --- FOOTER --- */
-  footer { border-top: 1px solid var(--line-soft); padding: clamp(50px,7vw,80px) 0 40px; }
-  .footer-top { display: flex; justify-content: space-between; gap: 30px; flex-wrap: wrap; }
-  .footer-logo { font-family: 'Bebas Neue'; font-size: 1.6rem; letter-spacing: 0.12em; }
-  .footer-logo span { color: var(--gold); }
-  .footer-tagline { color: var(--gray); font-size: 0.9rem; margin-top: 10px; max-width: 320px; }
-  .footer-links { display: flex; gap: 26px; flex-wrap: wrap; align-items: center; }
-  .footer-links a { color: var(--gray); font-size: 0.86rem; transition: color 0.2s; }
-  .footer-links a:hover { color: var(--gold); }
-  .footer-bottom { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-top: 44px; padding-top: 26px; border-top: 1px solid var(--line-soft); color: var(--gray-dim); font-size: 0.82rem; }
-  .socials a { color: var(--gray); border: 1px solid var(--line-soft); width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem; letter-spacing: 0.08em; transition: all 0.2s; }
-  .socials a:hover { color: var(--gold); border-color: var(--gold); }
-  @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1 !important; transform: none !important; transition: none !important; } }
-</style>
-<noscript><style>.reveal{opacity:1 !important;transform:none !important;}</style></noscript>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/birdie.css?v=20261107d">
+<link rel="stylesheet" href="assets/home.css?v=20261107c">
 </head>
-<body class="bt-home">
+<body>
+
+<div class="progress" id="progress"></div>
+<div class="altimeter" id="altimeter" aria-hidden="true">
+  <div class="alt-txt">Flughöhe <b id="altVal">0 m</b></div>
+  <div class="alt-track"><div class="alt-fill" id="altFill"></div><img class="alt-bird" id="altBird" src="assets/birdie-bird.png?v=1" alt=""></div>
+</div>
 
 <nav id="nav">
-  <a href="#" class="logo"><img src="assets/birdie-logo-light.png?v=1" alt="Birdie Tickets" style="height:44px;width:auto;display:block"></a>
+  <a href="#top" class="logo"><img src="assets/birdie-logo-light.png?v=1" alt="Birdie Tickets"></a>
   <ul>
     <li><a href="#funktionen">Funktionen</a></li>
     <li><a href="#ablauf">So funktioniert's</a></li>
@@ -241,190 +32,245 @@
     <li><a href="tickets.html">Ticketshop</a></li>
     <li><a href="#demo">Kontakt</a></li>
   </ul>
-  <a href="#demo" class="nav-cta">Demo anfragen</a>
-  <button class="nav-toggle" id="navToggle" aria-label="Menü">☰</button>
+  <a href="#demo" class="btn btn-gold nav-cta magnetic">Demo anfragen</a>
+  <button class="nav-toggle" id="navToggle" aria-label="Menü"><span></span><span></span><span></span></button>
 </nav>
 
 <!-- HERO -->
 <section class="hero" id="top">
-  <div class="hero-glow"></div>
+  <div class="aurora"><i></i><i></i><i></i></div>
+  <div class="hero-grid"></div>
+  <canvas id="sky"></canvas>
   <div class="wrap">
-    <div class="hero-content">
-      <span class="chip reveal">Ticketsystem für Bälle · Austria</span>
-      <h1 class="reveal d1">Verkauft eure Balltickets<br><em>komplett online.</em></h1>
-      <p class="hero-desc reveal d2">Birdie Tickets ist das Ticketsystem für Bälle – eigener Online-Shop, interaktiver Sitzplan, sichere Bezahlung und QR-Einlass. Ihr verkauft rund um die Uhr, das Geld fließt direkt an euch.</p>
+    <div class="hero-text">
+      <span class="pill reveal"><span class="dot"></span>Ticketsystem für Bälle &amp; Events · Österreich</span>
+      <h1 aria-label="Dein Ticket. Dein Höhenflug.">
+        <span class="line"><span class="w">Dein</span> <span class="w">Ticket.</span></span>
+        <span class="line"><span class="w grad">Dein</span> <span class="w grad">Höhenflug.</span></span>
+      </h1>
+      <p class="hero-desc reveal d2">Birdie Tickets bringt euren Ball online: eigener Ticketshop, interaktiver Sitzplan, QR-Einlass und Auszahlung direkt auf euer Konto. Ihr verkauft rund um die Uhr – wir sorgen für den Auftrieb.</p>
       <div class="hero-actions reveal d3">
-        <a href="#demo" class="btn btn-gold">Demo anfragen</a>
-        <a href="tickets.html" class="btn btn-ghost">Ticketshop ansehen</a>
+        <a href="#demo" class="btn btn-gold magnetic">Demo anfragen <span class="arr">→</span></a>
+        <a href="tickets.html" class="btn btn-ghost magnetic">Ticketshop ansehen</a>
       </div>
-      <div class="hero-tags reveal d4">
-        <span class="hero-tag">QR-Tickets &amp; PDF</span>
-        <span class="hero-tag">Interaktiver Sitzplan</span>
-        <span class="hero-tag">Stripe-Auszahlung</span>
-        <span class="hero-tag">Einlass-Scanner</span>
+      <div class="hero-trust reveal d4">
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 5 5L20 7"/></svg>Keine Fixkosten</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 5 5L20 7"/></svg>Auszahlung per Stripe</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 5 5L20 7"/></svg>QR-Einlass</span>
       </div>
     </div>
+
+    <div class="flight reveal d2" id="flight">
+      <div class="orbit"></div><div class="orbit o2"></div>
+      <svg class="path" viewBox="0 0 600 600" aria-hidden="true">
+        <path class="route" d="M40,470 C140,330 210,520 320,360 S470,120 560,90"/>
+      </svg>
+      <div class="bird-glow"></div>
+      <div class="bird" data-depth="18"><img src="assets/birdie-bird.png?v=1" alt="Birdie Vogel"></div>
+      <span class="fly-tkt"></span><span class="fly-tkt f2"></span><span class="fly-tkt f3"></span>
+      <div class="card-f c1" data-depth="-26"><span class="ic">🎟</span><div>2× Sitzkarte<small>BRG Ball 2027 · bezahlt</small></div></div>
+      <div class="card-f c2" data-depth="30"><span class="ic ok">✓</span><div>Einlass erfolgreich<small>Ticket CM-8XK4 · 21:04</small></div></div>
+      <div class="card-f c3" data-depth="-14"><span class="ic b">€</span><div>Auszahlung unterwegs<small>direkt auf euer Konto</small></div></div>
+    </div>
   </div>
-  <div class="hero-scroll"><span>Scroll</span><div class="ln"></div></div>
+  <div class="scroll-cue" aria-hidden="true"></div>
 </section>
 
-<!-- STATS -->
-<section class="stats" style="padding:0">
-  <div class="stats-grid">
-    <div class="stat reveal"><div class="stat-num">Mehrere</div><div class="stat-label">Bälle live über unser System</div></div>
-    <div class="stat reveal d1"><div class="stat-num">Keine</div><div class="stat-label">Fixkosten – Gebühr nur pro Ticket</div></div>
-    <div class="stat reveal d2"><div class="stat-num">100 %</div><div class="stat-label">Auszahlung direkt an den Veranstalter</div></div>
+<!-- LAUFBAND -->
+<div class="tapes" aria-hidden="true">
+  <div class="tape t2"><div class="track" data-dup>
+    <span>Dein Ticket, dein Höhenflug</span><span>Für Maturabälle</span><span>Für Schulbälle</span><span>Für Vereine</span><span>Für Clubs &amp; Events</span><span>Für Tennisclubs</span>
+  </div></div>
+  <div class="tape t1"><div class="track" data-dup>
+    <span>QR-Tickets &amp; PDF</span><span>Interaktiver Sitzplan</span><span>Stripe-Auszahlung</span><span>Einlass-Scanner</span><span>Live-Dashboard</span><span>Sponsor-Logos auf jedem Ticket</span>
+  </div></div>
+</div>
+
+<!-- ZAHLEN -->
+<section class="stats on-beige">
+  <div class="wrap">
+    <div class="stats-grid">
+      <div class="stat reveal"><div class="stat-num"><span data-count="0">0</span> €</div><div class="stat-label">Fixkosten – Gebühr nur pro verkauftem Ticket</div></div>
+      <div class="stat reveal d1"><div class="stat-num"><span data-count="100">0</span> %</div><div class="stat-label">eures Ticketerlöses fließt direkt auf euer Konto</div></div>
+      <div class="stat reveal d2"><div class="stat-num">24/7</div><div class="stat-label">Ticketverkauf – euer Shop schläft nie</div></div>
+    </div>
   </div>
 </section>
 
-<!-- FEATURES -->
+<!-- FUNKTIONEN -->
 <section id="funktionen">
   <div class="wrap">
     <div class="sec-head">
       <span class="label reveal">Das Ticketsystem</span>
-      <h2 class="head reveal d1">Alles für euren<br><em>Ballticket-Verkauf</em></h2>
-      <p class="sub reveal d2" style="margin-top:22px">Ein System, das den kompletten Verkauf abbildet – vom ersten Klick eurer Gäste bis zum Scan am Einlass.</p>
+      <h2 class="head reveal d1">Alles an Bord für<br><span class="grad">euren Ticketverkauf.</span></h2>
+      <p class="sub reveal d2" style="margin-top:20px">Ein System für den kompletten Weg – vom ersten Klick eurer Gäste bis zum Scan am Einlass.</p>
     </div>
-    <div class="feat-grid">
-      <div class="feat reveal">
-        <div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4Z"/><path d="M13 6v12" stroke-dasharray="2 2"/></svg></div>
-        <h3>Online-Ticketshop</h3>
-        <p>Euer eigener Shop, erreichbar über einen einfachen Link. Im grün-violetten Birdie-Design, rund um die Uhr geöffnet.</p>
+
+    <div class="bento">
+      <div class="tile t-shop reveal">
+        <div>
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4Z"/><path d="M13 6v12" stroke-dasharray="2 2"/></svg></div>
+          <h3>Euer eigener Ticketshop</h3>
+          <p>Erreichbar über einen einfachen Link, rund um die Uhr geöffnet. Kategorien, Preise und Kontingente stellt ihr selbst ein – eure Gäste kaufen in wenigen Klicks.</p>
+        </div>
+        <div class="mini-shop" id="miniShop">
+          <div class="bar"><i></i><i></i><i></i></div>
+          <div class="ev">BRG Ball 2027<small>Sa., 27. Februar 2027 · 19:00 Uhr</small></div>
+          <div class="mrow" data-price="25"><span>Flanierkarte</span><b>€ 25</b><span class="q"><button type="button" data-d="-1" aria-label="weniger">−</button><span class="n">1</span><button type="button" data-d="1" aria-label="mehr">+</button></span></div>
+          <div class="mrow" data-price="60"><span>Sitzkarte + Menü</span><b>€ 60</b><span class="q"><button type="button" data-d="-1" aria-label="weniger">−</button><span class="n">0</span><button type="button" data-d="1" aria-label="mehr">+</button></span></div>
+          <div class="mini-buy"><b id="miniSum">€ 25,00</b><span>Zur Kassa</span></div>
+        </div>
       </div>
-      <div class="feat reveal d1">
-        <div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><path d="M14 14h2v2m4-2v6m-6 0h6"/></svg></div>
+
+      <div class="tile t-qr reveal d1">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><path d="M14 14h2v2m4-2v6m-6 0h6"/></svg></div>
         <h3>Digitale Tickets</h3>
-        <p>Jedes Ticket mit QR-Code und PDF zum Ausdrucken – automatisch mit euren Sponsor-Logos versehen.</p>
+        <p>Jedes Ticket mit QR-Code und als PDF – automatisch mit euren Sponsor-Logos.</p>
+        <div class="qr-box"><i></i></div>
       </div>
-      <div class="feat reveal d2">
-        <div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="8" r="2"/><circle cx="12" cy="8" r="2"/><circle cx="17" cy="8" r="2"/><circle cx="7" cy="15" r="2"/><circle cx="12" cy="15" r="2"/><circle cx="17" cy="15" r="2"/></svg></div>
+
+      <div class="tile t-seat reveal">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="8" r="2"/><circle cx="12" cy="8" r="2"/><circle cx="17" cy="8" r="2"/><circle cx="7" cy="15" r="2"/><circle cx="12" cy="15" r="2"/><circle cx="17" cy="15" r="2"/></svg></div>
         <h3>Interaktiver Sitzplan</h3>
-        <p>Für bestuhlte Bälle wählen die Gäste ihren Platz selbst. Den Saalplan legt ihr per Drag-&-Drop-Editor an.</p>
+        <p>Gäste wählen ihren Platz selbst – Doppelbelegung ausgeschlossen.</p>
+        <div class="seats" id="seatDemo"></div>
+        <div class="seat-hint">Probier's aus: Klick auf einen freien Platz.</div>
       </div>
-      <div class="feat reveal">
-        <div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg></div>
+
+      <div class="tile t-pay reveal d1">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg></div>
         <h3>Bezahlung &amp; Auszahlung</h3>
-        <p>Sichere Kartenzahlung über Stripe. Der Erlös fließt direkt auf euer eigenes Konto – Gebühren-Modus frei wählbar.</p>
+        <p>Sichere Kartenzahlung über Stripe. Der Erlös fließt direkt auf euer eigenes Konto.</p>
+        <div class="payflow"><span class="n">Gast</span><span class="wire"></span><span class="n v">Stripe</span><span class="wire w2"></span><span class="n">Euer Konto</span></div>
       </div>
-      <div class="feat reveal d1">
-        <div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7V5a1 1 0 0 1 1-1h2M4 17v2a1 1 0 0 0 1 1h2m10-16h2a1 1 0 0 1 1 1v2m-3 12h2a1 1 0 0 0 1-1v-2M8 12h8M12 8v8"/></svg></div>
+
+      <div class="tile t-scan reveal d2">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7V5a1 1 0 0 1 1-1h2M4 17v2a1 1 0 0 0 1 1h2m10-16h2a1 1 0 0 1 1 1v2m-3 12h2a1 1 0 0 0 1-1v-2M8 12h8"/></svg></div>
         <h3>Einlass-Scanner</h3>
-        <p>Eine passwortgeschützte Scan-Seite für euer Personal. QR-Check-in in Sekunden – ohne Zugriff auf Umsätze.</p>
+        <p>Passwortgeschützte Scan-Seite für euer Personal – Check-in in Sekunden.</p>
+        <div class="scanner"><span class="ring"></span><span class="ok">✓</span></div>
       </div>
-      <div class="feat reveal d2">
-        <div class="feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 20V10m5 10V4m5 16v-7m5 7V8"/></svg></div>
-        <h3>Live-Dashboard</h3>
-        <p>Umsätze und verkaufte Tickets in Echtzeit. Mehrere Veranstalter pro Ball, Bestellübersicht und CSV-Export.</p>
+
+      <div class="tile t-dash reveal">
+        <div>
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10m5 10V4m5 16v-7m5 7V8"/></svg></div>
+          <h3>Live-Dashboard</h3>
+          <p>Umsätze und verkaufte Tickets in Echtzeit. Mehrere Veranstalter pro Ball, Bestellübersicht, Auszahlungen und Exporte für eure Buchhaltung.</p>
+        </div>
+        <div>
+          <div class="chart" id="chart">
+            <i style="--h:28%"></i><i style="--h:40%"></i><i style="--h:36%"></i><i style="--h:55%"></i><i style="--h:48%"></i><i style="--h:70%"></i><i style="--h:64%"></i><i style="--h:88%"></i><i style="--h:80%"></i><i style="--h:100%"></i>
+          </div>
+          <div class="kpis"><div><small>Verkaufte Tickets</small><b>live</b></div><div><small>Umsatz</small><b>in Echtzeit</b></div><div><small>Auslastung</small><b>auf einen Blick</b></div></div>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- HIGHLIGHT ROWS -->
+<!-- SHOWCASE -->
 <section style="padding-top:0">
-  <div class="wrap">
-    <div class="rows">
-      <div class="row">
-        <div class="row-text">
-          <span class="label reveal">Für Veranstalter</span>
-          <h3 class="reveal d1">Euer eigener Shop –<br><em>in Minuten startklar</em></h3>
-          <ul class="row-list reveal d2">
-            <li>Ball anlegen, Kategorien &amp; Preise festlegen</li>
-            <li>Kontingente pro Kategorie oder ein Gesamtkontingent</li>
-            <li>Shop-Link teilen – Gäste kaufen sofort online</li>
-            <li>Optional: Gebühren übernehmen oder an Gäste weitergeben</li>
-          </ul>
+  <div class="wrap show">
+    <div>
+      <span class="label reveal">Für Veranstalter</span>
+      <h2 class="head reveal d1">Euer Shop –<br><span class="grad">in Minuten startklar.</span></h2>
+      <ul class="checks reveal d2">
+        <li>Ball anlegen, Kategorien &amp; Preise festlegen</li>
+        <li>Kontingente pro Kategorie oder ein Gesamtkontingent</li>
+        <li>Shop-Link teilen – Gäste kaufen sofort online</li>
+        <li>Gebühren übernehmen oder an die Gäste weitergeben</li>
+        <li>Eigenes Ticket-Design und Sponsor-Logos möglich</li>
+      </ul>
+    </div>
+    <div class="stage3d reveal d2">
+      <div class="tk3d" id="tk3d">
+        <div class="tk-top">
+          <img src="assets/birdie-logo-light.png?v=1" alt="Birdie Tickets">
+          <div class="tk-ev">BRG Ball 2027</div>
+          <div class="tk-meta">Sa., 27. Februar 2027 · 19:00 Uhr</div>
+          <span class="tk-cat">Sitzkarte · Reihe 3 · Tisch 7</span>
         </div>
-        <div class="row-visual reveal d2">
-          <div class="ticket">
-            <div class="ticket-top">
-              <div><div class="t-ev">BRG Ball 2027</div><span class="t-cat">Stehplatz</span></div>
-              <div class="t-logo">BIRDIE</div>
-            </div>
-            <div class="ticket-body">
-              <div class="qr"><i></i></div>
-              <div class="ticket-info">
-                <div class="t-lbl">Ticketcode</div>
-                <div class="t-code">CM-8XK4-27QA</div>
-                <div class="t-seat">✓ Gültig · bezahlt</div>
-              </div>
-            </div>
-          </div>
+        <div class="tk-cut"></div>
+        <div class="tk-bot">
+          <div class="qr-box"><i></i></div>
+          <div class="tk-code"><small>Ticketcode</small><b>CM-8XK4-27QA</b><span>✓ Gültig · bezahlt</span></div>
         </div>
-      </div>
-
-      <div class="row rev">
-        <div class="row-text">
-          <span class="label reveal">Am Ballabend</span>
-          <h3 class="reveal d1">Sitzplatzwahl &amp;<br><em>QR-Einlass</em></h3>
-          <ul class="row-list reveal d2">
-            <li>Gäste reservieren ihren Platz beim Kauf</li>
-            <li>Doppelbelegung wird technisch verhindert</li>
-            <li>Einlasspersonal scannt den QR-Code – fertig</li>
-            <li>Bereits eingecheckte Tickets werden sofort erkannt</li>
-          </ul>
-        </div>
-        <div class="row-visual reveal d2">
-          <div class="seatgrid">
-            <div class="stage">Bühne</div>
-            <div class="seats" id="seatDemo"></div>
-            <div class="seat-legend">
-              <span><b style="background:rgba(232,220,196,0.1)"></b>frei</span>
-              <span><b style="background:rgba(139,92,246,0.25)"></b>verkauft</span>
-              <span><b style="background:var(--gold)"></b>Auswahl</span>
-            </div>
-          </div>
-        </div>
+        <div class="holo"></div><div class="glare"></div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- STEPS -->
-<section class="steps-sec" id="ablauf">
+<!-- FLUGPLAN / ABLAUF -->
+<section class="on-beige" id="ablauf">
   <div class="wrap">
-    <div class="sec-head">
+    <div class="sec-head center">
       <span class="label reveal">So funktioniert's</span>
-      <h2 class="head reveal d1">In drei Schritten<br><em>zum Ticketverkauf</em></h2>
+      <h2 class="head reveal d1" style="color:var(--ink)">Euer Flugplan<br>in drei Etappen.</h2>
+      <p class="sub reveal d2" style="margin-top:18px">Vom ersten Gespräch bis zum vollen Saal – wir begleiten euch auf dem ganzen Weg.</p>
     </div>
-    <div class="steps">
-      <div class="step reveal">
-        <div class="step-num">01</div>
-        <h3>Einrichten</h3>
-        <p>Wir legen euren Ball gemeinsam an – Ticketkategorien, Preise und bei Bedarf den Sitzplan. In der Demo zeigen wir euch alles live.</p>
-      </div>
-      <div class="step reveal d1">
-        <div class="step-num">02</div>
-        <h3>Verkaufen</h3>
-        <p>Ihr teilt den Shop-Link. Eure Gäste kaufen rund um die Uhr, ihr verfolgt Umsätze und Auslastung im Live-Dashboard.</p>
-      </div>
-      <div class="step reveal d2">
-        <div class="step-num">03</div>
-        <h3>Einlassen</h3>
-        <p>Am Ballabend scannt euer Personal die QR-Codes über die Einlass-Seite. Schnell, sicher und ohne Papierlisten.</p>
+    <div class="plan" id="plan">
+      <svg viewBox="0 0 1000 220" preserveAspectRatio="none" aria-hidden="true">
+        <path class="base" d="M60,180 C220,180 230,40 380,60 S600,190 700,120 S880,10 960,40"/>
+        <path class="drawn" id="planPath" d="M60,180 C220,180 230,40 380,60 S600,190 700,120 S880,10 960,40"/>
+      </svg>
+      <img class="plan-bird" id="planBird" src="assets/birdie-bird-dark.png?v=1" alt="">
+      <div class="steps">
+        <div class="step reveal">
+          <div class="step-top"><span class="step-num">01</span><span class="step-tag">Check-in</span></div>
+          <h3>Einrichten</h3>
+          <p>Wir legen euren Ball gemeinsam an – Ticketkategorien, Preise und bei Bedarf den Sitzplan. In der Demo zeigen wir euch alles live.</p>
+        </div>
+        <div class="step reveal d1">
+          <div class="step-top"><span class="step-num">02</span><span class="step-tag">Take-off</span></div>
+          <h3>Verkaufen</h3>
+          <p>Ihr teilt den Shop-Link. Eure Gäste kaufen rund um die Uhr, ihr verfolgt Umsätze und Auslastung im Live-Dashboard.</p>
+        </div>
+        <div class="step reveal d2">
+          <div class="step-top"><span class="step-num">03</span><span class="step-tag">Landung</span></div>
+          <h3>Einlassen</h3>
+          <p>Am Ballabend scannt euer Personal die QR-Codes über die Einlass-Seite. Schnell, sicher und ohne Papierlisten.</p>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
 <!-- TENNIS -->
-<section class="tennis" id="tennis">
+<section id="tennis">
   <div class="wrap">
-    <div class="inner">
-      <span class="chip reveal">Zweites Produkt · Tennis</span>
-      <h2 class="reveal d1">Buchungssystem für<br><em>Tennisclubs</em></h2>
-      <p class="sub reveal d2">Nicht nur Bälle: Für Tennisclubs bieten wir ein modulares Buchungssystem mit integriertem Bezahlsystem. Mitglieder buchen Plätze online, der Club stellt alles nach seinen Regeln ein – vom Zeitfenster bis zum Tarif.</p>
-      <div class="tennis-feats reveal d2">
-        <div>Online-Platzbuchung rund um die Uhr</div>
-        <div>Modulare Einstellungen für jeden Club</div>
-        <div>Integriertes Bezahlsystem</div>
-        <div>Übersicht über Auslastung &amp; Buchungen</div>
+    <div class="tennis-card reveal">
+      <div>
+        <span class="label">Zweites Produkt · Tennis</span>
+        <h2>Buchungssystem für<br><span class="grad">Tennisclubs.</span></h2>
+        <p class="sub">Nicht nur Bälle: Für Tennisclubs bieten wir ein modulares Buchungssystem mit integriertem Bezahlsystem. Mitglieder buchen Plätze online, der Club stellt alles nach seinen Regeln ein – vom Zeitfenster bis zum Tarif.</p>
+        <div class="tennis-feats">
+          <div>Online-Platzbuchung rund um die Uhr</div>
+          <div>Modulare Einstellungen für jeden Club</div>
+          <div>Integriertes Bezahlsystem</div>
+          <div>Übersicht über Auslastung &amp; Buchungen</div>
+        </div>
+        <div class="tennis-actions">
+          <a href="https://tennis.core-management.at/home.html" target="_blank" rel="noopener" class="btn btn-gold magnetic">Tennis-System ansehen <span class="arr">→</span></a>
+          <a href="#demo" class="btn btn-ghost magnetic">Demo anfragen</a>
+        </div>
       </div>
-      <div class="tennis-actions reveal d2">
-        <a href="https://tennis.core-management.at/home.html" target="_blank" rel="noopener" class="btn btn-gold">Tennis-System ansehen</a>
-        <a href="#demo" class="btn btn-ghost">Demo anfragen</a>
-      </div>
+      <div class="court" aria-hidden="true"><i class="c1"></i><i class="c2"></i><i class="c3"></i><i class="c4"></i><i class="c5"></i><i class="net"></i><span class="ball"></span></div>
     </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-band">
+  <div class="birds" aria-hidden="true">
+    <img src="assets/birdie-bird.png?v=1" alt="" style="top:22%;animation-duration:19s;animation-delay:-3s">
+    <img src="assets/birdie-bird.png?v=1" alt="" style="top:58%;width:30px;animation-duration:26s;animation-delay:-14s;opacity:.35">
+    <img src="assets/birdie-bird.png?v=1" alt="" style="top:74%;width:36px;animation-duration:22s;animation-delay:-8s;opacity:.4">
+  </div>
+  <div class="wrap">
+    <h2 class="reveal">Bereit für euren<br><span class="grad">Höhenflug?</span></h2>
+    <p class="sub reveal d1">Holt euch eine unverbindliche Demo – wir zeigen euch das System live und richten euren Ball gemeinsam ein.</p>
+    <a href="#demo" class="btn btn-gold magnetic reveal d2">Jetzt Demo anfragen <span class="arr">→</span></a>
   </div>
 </section>
 
@@ -466,13 +312,15 @@
   </div>
 </section>
 
+
 <!-- FOOTER -->
 <footer>
   <div class="wrap">
+    <div class="f-slogan" id="fSlogan">Dein Ticket.<br>Dein Höhenflug.</div>
     <div class="footer-top">
       <div>
-        <a href="#top" class="footer-logo"><img src="assets/birdie-logo-light.png?v=1" alt="Birdie Tickets" style="height:46px;width:auto;display:block"></a>
-        <div class="footer-tagline">Ticketsystem für Bälle · Buchungssystem für Tennisclubs.</div>
+        <a href="#top" class="footer-logo"><img src="assets/birdie-logo-light.png?v=1" alt="Birdie Tickets"></a>
+        <div class="footer-tagline">Ticketsystem für Bälle &amp; Events · Buchungssystem für Tennisclubs.</div>
       </div>
       <div class="footer-links">
         <a href="tickets.html">Ticketshop</a>
@@ -485,40 +333,13 @@
     </div>
     <div class="footer-bottom">
       <p>© 2026 Birdie Tickets. Alle Rechte vorbehalten.</p>
-      <div class="socials"><a href="https://www.instagram.com/core_mgt/" target="_blank" rel="noopener">IG</a></div>
+      <div class="socials"><a href="https://www.instagram.com/core_mgt/" target="_blank" rel="noopener" aria-label="Instagram">IG</a></div>
     </div>
   </div>
 </footer>
 
+<script src="assets/home.js?v=20261107b"></script>
 <script>
-  // Hero-Hintergrund (einziges eingebettetes Bild)
-
-  // Sitzplan-Demo (dekorativ) füllen
-  (function () {
-    const g = document.getElementById('seatDemo');
-    if (!g) return;
-    const sold = new Set([2,3,7,11,14,15,22,28,33,34,41,47,52,55,58,63,66]);
-    const sel = new Set([24,25]);
-    let html = '';
-    for (let i = 0; i < 70; i++) {
-      const c = sel.has(i) ? ' sel' : (sold.has(i) ? ' sold' : '');
-      html += '<i class="' + c.trim() + '"></i>';
-    }
-    g.innerHTML = html;
-  })();
-
-  // Nav: Scroll-Zustand + Mobile-Menü
-  const nav = document.getElementById('nav');
-  window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 60));
-  document.getElementById('navToggle').addEventListener('click', () => nav.classList.toggle('open'));
-  nav.querySelectorAll('ul a').forEach(a => a.addEventListener('click', () => nav.classList.remove('open')));
-
-  // Scroll-Reveal
-  const obs = new IntersectionObserver(entries => {
-    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
-  }, { threshold: 0.12 });
-  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
-
   // Demo-Formular (Formspree)
   const form = document.getElementById('contactForm');
   if (form) {
@@ -540,16 +361,6 @@
       }
     });
   }
-
-  // Smooth-Scroll für Anker
-  document.querySelectorAll('a[href^="#"]').forEach(a => {
-    a.addEventListener('click', e => {
-      const id = a.getAttribute('href');
-      if (id.length < 2) return;
-      const t = document.querySelector(id);
-      if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth' }); }
-    });
-  });
 </script>
 </body>
 </html>
