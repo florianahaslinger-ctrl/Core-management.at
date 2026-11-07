@@ -195,3 +195,9 @@ body.bt .seat-howto, body.bt .seat-map, body.bt .seat-stage{border-radius:var(--
 body.bt .status-title{font-family:var(--bt-font);font-weight:800;letter-spacing:-.025em;font-size:30px}
 body.bt .status-code{font-family:var(--bt-font);font-weight:800;letter-spacing:.06em;font-size:22px;color:var(--bt-violet-2)}
 body.bt #checkoutTotal{font-family:var(--bt-font) !important;font-weight:800;letter-spacing:-.02em;color:var(--bt-beige) !important}
+
+/* Bild-Logo (neue Wortmarke) statt Text-Logo: Punkt ausblenden */
+body.bt .logo::before, body.bt-home .logo::before, body.bt-home .footer-logo::before{content:none}
+body.bt .logo img, body.bt-home .logo img, body.bt-home .footer-logo img{transition:opacity .2s}
+body.bt .logo:hover img, body.bt-home .logo:hover img{opacity:.85}
+@media (max-width:560px){ body.bt .logo img, body.bt-home .logo img{height:38px !important} }
