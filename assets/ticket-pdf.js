@@ -344,10 +344,18 @@
     const FIRST = back ? 7 : 6;
     const perTicket = back ? 5 : 3; // QR, Front-Content, Front-Page (+ Back-Content, Back-Page)
 
-    // QR-Box oben rechts, über dem Einlass-Block
-    const QS = 48, QX = 497, QY_TOP = 48;               // top-down
+    // Weiße Box mit QR-Code + manuellem Ticketcode.
+    // Standard: oben rechts über dem Einlass-Block. Je Design übersteuerbar über
+    // custom_ticket.qr: 'tl' = links oben (z. B. HTL Hallein) oder {x, y} in pt (von links/oben).
+    const BW = 60, BH = 66, QS = 48;
+    let BX = 491, BY_TOP = 44;
+    if (ct.qr === 'tl') { BX = 26; BY_TOP = 8; }
+    else if (ct.qr && typeof ct.qr === 'object' && isFinite(ct.qr.x) && isFinite(ct.qr.y)) {
+      BX = Math.max(0, Math.min(CT_W - BW, Number(ct.qr.x)));
+      BY_TOP = Math.max(0, Math.min(CT_H - BH, Number(ct.qr.y)));
+    }
+    const QX = BX + 6, QY_TOP = BY_TOP + 4;             // top-down
     const qyPdf = CT_H - (QY_TOP + QS);                 // bottom-up
-    const BX = 491, BW = 60, BY_TOP = 44, BH = 66;
     const byPdf = CT_H - (BY_TOP + BH);
 
     const pageRefs = [];
@@ -379,14 +387,14 @@
       ]);
       // Front-Content: Design-Bild + weiße QR-Box + QR + Ticketcode
       const code = pdfText(t.code);
-      const codeW = t.code.length * 7.5 * 0.58;         // grobe Textbreite (Helvetica-Bold 7.5)
+      const codeW = t.code.length * 6.6 * 0.68;         // Textbreite Helvetica-Bold 6.6 (Ziffern/Großbuchstaben ≈ 0,68 em)
       const codeX = BX + Math.max(0, (BW - codeW) / 2);
       let fc = '';
       fc += 'q ' + CT_W.toFixed(2) + ' 0 0 ' + CT_H.toFixed(2) + ' 0 0 cm /Fr Do Q\n';
       fc += '1 1 1 rg ' + BX + ' ' + byPdf.toFixed(2) + ' ' + BW + ' ' + BH + ' re f\n';
-      fc += '0.788 0.659 0.298 RG 0.8 w ' + BX + ' ' + byPdf.toFixed(2) + ' ' + BW + ' ' + BH + ' re S\n';
+      fc += '0.545 0.361 0.965 RG 0.8 w ' + BX + ' ' + byPdf.toFixed(2) + ' ' + BW + ' ' + BH + ' re S\n';
       fc += 'q ' + QS + ' 0 0 ' + QS + ' ' + QX + ' ' + qyPdf.toFixed(2) + ' cm /Qr Do Q\n';
-      fc += '0.05 0.05 0.05 rg BT /F1 7.5 Tf ' + codeX.toFixed(2) + ' ' + (byPdf + 6).toFixed(2) + ' Td (' + code + ') Tj ET\n';
+      fc += '0.05 0.05 0.05 rg BT /F1 6.6 Tf ' + codeX.toFixed(2) + ' ' + (byPdf + 6).toFixed(2) + ' Td (' + code + ') Tj ET\n';
       objects.push(['<< /Length ' + latin1(fc).length + ' >>\nstream\n' + fc + '\nendstream']);
       // Front-Page
       objects.push([
