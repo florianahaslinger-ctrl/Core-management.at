@@ -4,7 +4,7 @@
   'use strict';
   const S = window.CMStore;
   const $ = id => document.getElementById(id);
-  const GOLD = '#7C3AED'; // validierte Diagrammfarbe auf dunklem Grund
+  const GOLD = '#E3C98E'; // Diagrammfarbe (Sand) auf dunklem Grund – kein Lila mehr
 
   let orders = [];   // Cache aller Bestellungen
   let events = [];   // Cache aller Events (inkl. inaktive)
