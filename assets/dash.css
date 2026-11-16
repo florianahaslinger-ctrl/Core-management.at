@@ -428,3 +428,111 @@ footer.shop-footer{border-top-color:rgba(232,220,196,.08)}
   .stat-tile .v{font-size:28px}
 }
 #statEvent{width:auto;min-width:280px;max-width:100%}
+
+/* =========================================================
+   HELLES THEMA: Beige als Hauptfarbe, Grün nur noch als Akzent
+   (Schrift, Buttons, aktiver Tab). Kein Lila.
+   ========================================================= */
+:root{
+  --black:#EFE6D3; --dark:#F7F1E5; --panel:#FBF8F1; --white:#1F3D2B; --gray:#5E6B5F; --muted:#857F6B;
+  --line:rgba(31,61,43,.12); --gold:#1F3D2B; --gold-light:#2E5640; --gold-dim:rgba(31,61,43,.07);
+  --gold-grad:linear-gradient(135deg,#2A4D38 0%,#1F3D2B 100%);
+  --card-grad:linear-gradient(180deg,#FFFDF8 0%,#FBF6EC 100%);
+  --shadow:0 14px 34px -26px rgba(31,61,43,.45);
+  --surface:#FFFCF6; --surface-2:#F7F1E5; --sand:#A9823F;
+  --ok:#2F8A4C; --warn:#B26A16; --bad:#B8403F;
+}
+body{color:#1F3D2B;background:radial-gradient(1200px 700px at 85% -10%,rgba(198,161,91,.16),transparent 60%),
+  radial-gradient(900px 700px at -10% 10%,rgba(255,255,255,.55),transparent 55%),#EFE6D3;background-attachment:fixed}
+::selection{background:rgba(198,161,91,.35);color:#1F3D2B}
+::-webkit-scrollbar-track{background:#EFE6D3}
+::-webkit-scrollbar-thumb{background:#CDBF9F;border-color:#EFE6D3}
+::-webkit-scrollbar-thumb:hover{background:#B9A985}
+
+/* Navigation */
+.shop-nav{background:rgba(247,241,229,.88);border-bottom:1px solid rgba(31,61,43,.10);box-shadow:none}
+.shop-nav .links a{color:#5E6B5F}
+.shop-nav .links a:hover,.shop-nav .links a.active{color:#1F3D2B}
+.shop-nav .links a:not(.nav-user)::after{background:#1F3D2B}
+.nav-user{color:#1F3D2B;background:#FFFCF6;border-color:rgba(31,61,43,.18)}
+.nav-user:hover{border-color:#1F3D2B;background:#FFFFFF}
+
+/* Kopf */
+.page-head .eyebrow{background:rgba(31,61,43,.07);color:#1F3D2B}
+.page-head .eyebrow::before{background:#A9823F}
+.page-head h1{color:#1F3D2B}
+.page-head h1 em{color:#A9823F}
+.card .sub,.page-head p{color:#5E6B5F}
+
+/* Tabs */
+.dash-tabs{background:rgba(31,61,43,.05);border-color:rgba(31,61,43,.08)}
+.dash-tabs button{color:#5E6B5F}
+.dash-tabs button:hover{color:#1F3D2B;background:rgba(31,61,43,.06)}
+.dash-tabs button.active{color:#F7F1E5;background:#1F3D2B;box-shadow:0 6px 14px -8px rgba(31,61,43,.6)}
+
+/* Karten & Kennzahlen */
+.card,.chart-card,.stat-tile{background:#FFFCF6;border:1px solid rgba(31,61,43,.09);box-shadow:0 1px 0 #fff inset,0 14px 34px -28px rgba(31,61,43,.5)}
+.chart-card h3{color:#5E6B5F}
+.stat-tile .k{color:#5E6B5F}
+.stat-tile .v{color:#1F3D2B}
+.stat-tile .s{color:#857F6B}
+.stat-tile:hover{border-color:rgba(169,130,63,.45)}
+.stat-tile:first-child{background:linear-gradient(150deg,#F3E6C8,#EAD8AE);border-color:rgba(169,130,63,.35)}
+.stat-tile:first-child .v{color:#1F3D2B}
+
+/* Buttons */
+.btn-gold{color:#F7F1E5;box-shadow:0 8px 18px -12px rgba(31,61,43,.7)}
+.btn-gold:hover{box-shadow:0 12px 24px -12px rgba(31,61,43,.8)}
+.btn-ghost{color:#1F3D2B;border:1px solid rgba(31,61,43,.28);background:#FFFCF6}
+.btn-ghost:hover{border-color:#1F3D2B;color:#1F3D2B;background:#FFFFFF}
+.btn-danger{color:#B8403F;border-color:rgba(184,64,63,.5);background:#FFFCF6}
+.btn-danger:hover{background:#FBE7E5;border-color:#B8403F}
+.linklike{color:#1F3D2B}
+
+/* Formulare */
+label{color:#4E5D50}
+input[type=text],input[type=email],input[type=number],input[type=password],input[type=datetime-local],input[type=date],textarea,select{
+  background:#FFFFFF;border:1px solid rgba(31,61,43,.18);color:#1F3D2B}
+input::placeholder,textarea::placeholder{color:#A39E8A}
+input:focus,textarea:focus,select:focus{border-color:#1F3D2B;box-shadow:0 0 0 3px rgba(31,61,43,.12)}
+.admin-cat{background:#F7F1E5;border-color:rgba(31,61,43,.10)}
+.switch{color:#4E5D50}
+.switch input{accent-color:#1F3D2B}
+.hint{color:#7A7766}
+
+/* Tabellen */
+table.data th{color:#5E6B5F;background:rgba(31,61,43,.05);border-bottom-color:rgba(31,61,43,.10)}
+table.data td{border-bottom-color:rgba(31,61,43,.07)}
+table.data tr:hover td{background:rgba(198,161,91,.08)}
+
+/* Status & Meldungen */
+.badge.offen{color:#9A5B12;border-color:rgba(178,106,22,.4);background:rgba(178,106,22,.10)}
+.badge.bezahlt{color:#256B3B;border-color:rgba(47,138,76,.4);background:rgba(47,138,76,.10)}
+.badge.storniert{color:#9E3332;border-color:rgba(184,64,63,.4);background:rgba(184,64,63,.08)}
+.badge.checked{color:#2C5C93;border-color:rgba(44,92,147,.35);background:rgba(44,92,147,.08)}
+.msg.error{background:#FBE7E5;border-color:rgba(184,64,63,.5);color:#8E2F2E}
+.msg.ok{background:#E5F2E8;border-color:rgba(47,138,76,.45);color:#215F35}
+.msg.info{background:#F3EAD7;border-color:rgba(169,130,63,.45);color:#5E4A1E}
+.chart-tip{background:#FFFFFF;border-color:rgba(31,61,43,.18);color:#1F3D2B;box-shadow:0 10px 24px -12px rgba(31,61,43,.4)}
+
+/* Modals */
+.modal{background:#FBF8F1;border-color:rgba(31,61,43,.12);box-shadow:0 40px 90px -30px rgba(31,61,43,.55)}
+.modal-backdrop{background:rgba(31,61,43,.35)}
+.modal .sub{color:#5E6B5F}
+
+/* Sitzplan im Dashboard */
+.seat-map{background:#F7F1E5;border-color:rgba(31,61,43,.12)}
+.seat-table{background:#FFFCF6;border-color:rgba(31,61,43,.12)}
+.seat{background:#FFFFFF;border-color:rgba(31,61,43,.25);color:#5E6B5F}
+.seat.free:hover{border-color:#1F3D2B;color:#1F3D2B}
+.seat.taken{background:#E6DECB;color:#9A9480;border-color:#D6CCB4}
+.seat.occupied{background:rgba(198,161,91,.28);color:#5E4A1E;border-color:rgba(169,130,63,.6)}
+.seat.occupied.in{background:rgba(44,92,147,.14);color:#2C5C93;border-color:rgba(44,92,147,.45)}
+.seat.hold{background:rgba(178,106,22,.12);color:#9A5B12;border-color:rgba(178,106,22,.4)}
+.seat.sel,.seat.src{background:#1F3D2B;color:#F7F1E5;border-color:#1F3D2B;outline-color:#A9823F}
+.seat-howto{background:#F3EAD7;border-color:rgba(169,130,63,.45);color:#5E4A1E}
+.seat-howto b{color:#1F3D2B}
+
+footer.shop-footer{border-top-color:rgba(31,61,43,.10);color:#857F6B}
+footer.shop-footer a{color:#5E6B5F}
+footer.shop-footer a:hover{color:#1F3D2B}

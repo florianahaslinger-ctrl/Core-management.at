@@ -4,7 +4,7 @@
   'use strict';
   const S = window.CMStore;
   const $ = id => document.getElementById(id);
-  const GOLD = '#E3C98E'; // Diagrammfarbe (Sand) auf dunklem Grund – kein Lila mehr
+  const GOLD = '#C29A55'; // Diagrammfarbe (Sand) auf hellem Beige – kein Lila
 
   let orders = [];   // Cache aller Bestellungen
   let events = [];   // Cache aller Events (inkl. inaktive)
@@ -119,7 +119,7 @@
     ticks.forEach(t => {
       const y = pad.t + ih - (t / maxV) * ih;
       svg += '<line x1="' + pad.l + '" y1="' + y + '" x2="' + (W - pad.r) + '" y2="' + y +
-        '" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>' +
+        '" stroke="rgba(31,61,43,0.10)" stroke-width="1"/>' +
         '<text x="' + (pad.l - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10" fill="#8E8875">' + t + '</text>';
     });
     data.forEach((d, i) => {
@@ -132,7 +132,7 @@
             ' H' + (x + barW - 4) + ' Q' + (x + barW) + ' ' + y + ' ' + (x + barW) + ' ' + (y + 4) +
             ' V' + (pad.t + ih) + ' Z" fill="' + GOLD + '"/>'
           : '<line x1="' + x + '" y1="' + (pad.t + ih) + '" x2="' + (x + barW) + '" y2="' + (pad.t + ih) +
-            '" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>') +
+            '" stroke="rgba(31,61,43,0.18)" stroke-width="2"/>') +
         '<rect x="' + (pad.l + i * step) + '" y="' + pad.t + '" width="' + step + '" height="' + ih +
         '" fill="transparent"/></g>';
       if (i % 2 === 0) {
@@ -167,12 +167,12 @@
       const w = Math.max(3, (d.revenue / maxV) * iw);
       const by = y + 20;
       svg += '<g class="bar" data-i="' + i + '">' +
-        '<text x="' + pad.l + '" y="' + (y + 13) + '" font-size="11" fill="#E8DCC4">' + esc(d.label) +
+        '<text x="' + pad.l + '" y="' + (y + 13) + '" font-size="11" fill="#1F3D2B">' + esc(d.label) +
         ' <tspan fill="#8E8875">· ' + esc(d.event) + '</tspan></text>' +
         '<path d="M' + pad.l + ' ' + by + ' H' + (pad.l + w - 4) + ' Q' + (pad.l + w) + ' ' + by + ' ' +
         (pad.l + w) + ' ' + (by + 4) + ' V' + (by + 8) + ' Q' + (pad.l + w) + ' ' + (by + 12) + ' ' +
         (pad.l + w - 4) + ' ' + (by + 12) + ' H' + pad.l + ' Z" fill="' + GOLD + '"/>' +
-        '<text x="' + (pad.l + w + 8) + '" y="' + (by + 10) + '" font-size="11" fill="#B5AC97">' +
+        '<text x="' + (pad.l + w + 8) + '" y="' + (by + 10) + '" font-size="11" fill="#5E6B5F">' +
         S.fmtEUR.format(d.revenue) + '</text>' +
         '<rect x="0" y="' + y + '" width="' + W + '" height="' + rowH + '" fill="transparent"/></g>';
     });
@@ -201,9 +201,9 @@
 
   function renderQuota() {
     let rows = '<tr><th>Event</th><th>Kategorie</th><th>Preis</th><th>Verkauft</th><th>Kontingent</th><th>Auslastung</th></tr>';
-    const bar = (pct) => '<td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;max-width:140px;height:6px;background:rgba(255,255,255,.08);border-radius:3px">' +
+    const bar = (pct) => '<td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;max-width:140px;height:6px;background:rgba(31,61,43,.10);border-radius:3px">' +
       '<div style="width:' + Math.min(100, pct) + '%;height:6px;background:' + GOLD + ';border-radius:3px"></div></div>' +
-      '<span style="color:#B5AC97;font-size:12px">' + pct + ' %</span></div></td>';
+      '<span style="color:#5E6B5F;font-size:12px">' + pct + ' %</span></div></td>';
     fEvents().forEach(ev => {
       // Gesamtkontingent: eine Zeile je Event statt je Kategorie.
       if (ev.sharedQuota !== null && ev.sharedQuota !== undefined) {
@@ -754,7 +754,7 @@
       const list = await S.getOrganizers(); // [{email, role}]
       const me = S.currentUser();
       $('adminList').innerHTML = list.map(a =>
-        '<div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">' +
+        '<div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(31,61,43,.08)">' +
         '<span style="flex:1">' + esc(a.email) + (a.email === me ? ' <span class="hint">(du)</span>' : '') +
           ' <span class="badge ' + (a.role === 'super_admin' ? 'bezahlt' : 'offen') + '" style="margin-left:6px">' +
           (a.role === 'super_admin' ? 'Head-Admin' : 'Veranstalter') + '</span></span>' +
@@ -787,7 +787,7 @@
       const emails = await S.getEventCoOwners(ev.id);
       list.innerHTML = emails.length
         ? emails.map(em =>
-            '<div style="display:flex;gap:10px;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05)">' +
+            '<div style="display:flex;gap:10px;align-items:center;padding:4px 0;border-bottom:1px solid rgba(31,61,43,.08)">' +
             '<span style="flex:1">' + esc(em) + '</span>' +
             '<button class="btn btn-danger btn-sm" data-cormrm="' + esc(em) + '">Entfernen</button>' +
             '</div>').join('')
