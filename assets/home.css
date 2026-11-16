@@ -346,7 +346,7 @@ nav.open .nav-toggle span:nth-child(3){transform:translateY(-5px) rotate(-45deg)
 
 /* ---------- Footer ---------- */
 footer{position:relative;overflow:hidden;background:var(--g900);padding:clamp(60px,8vw,90px) 0 34px;border-top:1px solid var(--line)}
-.f-slogan{font-size:clamp(2.6rem,9vw,8rem);font-weight:800;letter-spacing:-.055em;line-height:.95;color:transparent;-webkit-text-stroke:1.5px rgba(232,220,196,.22);
+.f-slogan{padding-bottom:.14em;font-size:clamp(2.6rem,9vw,8rem);font-weight:800;letter-spacing:-.055em;line-height:.95;color:transparent;-webkit-text-stroke:1.5px rgba(232,220,196,.22);
   background:linear-gradient(90deg,var(--v2),var(--beige)) no-repeat 0 0/0% 100%;-webkit-background-clip:text;background-clip:text;transition:background-size 1.4s var(--ease)}
 .f-slogan.visible{background-size:100% 100%}
 .footer-top{display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap;margin-top:56px}
